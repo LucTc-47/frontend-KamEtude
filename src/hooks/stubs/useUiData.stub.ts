@@ -127,14 +127,28 @@ const mockProfiles: ProfileRecord[] = [
 ];
 
 const mockCategories: ServiceCategory[] = [
-  { id: 'cat-academic', name: 'Academique', icon: 'BookOpen', active: true },
-  { id: 'cat-digital', name: 'Digital', icon: 'Laptop', active: true },
-  { id: 'cat-home', name: 'Aide a domicile', icon: 'Home', active: true },
+  { id: 'cat-academic', name: 'Académique', icon: 'GraduationCap', active: true },
+  { id: 'cat-home', name: 'Aide à domicile', icon: 'Home', active: true },
+  { id: 'cat-wellness', name: 'Beauté & Bien-être', icon: 'Sparkles', active: true },
+  { id: 'cat-diy', name: 'Bricolage', icon: 'Wrench', active: true },
+  { id: 'cat-events', name: 'Événementiel', icon: 'PartyPopper', active: true },
+  { id: 'cat-delivery', name: 'Livraison & Courses', icon: 'Truck', active: true },
+  { id: 'cat-digital', name: 'Numérique', icon: 'Monitor', active: true },
 ];
 
 const mockCities: CityRecord[] = [
-  { id: 'city-dschang', name: 'Dschang', active: true },
   { id: 'city-bafoussam', name: 'Bafoussam', active: true },
+  { id: 'city-bamenda', name: 'Bamenda', active: true },
+  { id: 'city-bertoua', name: 'Bertoua', active: true },
+  { id: 'city-buea', name: 'Buea', active: true },
+  { id: 'city-douala', name: 'Douala', active: true },
+  { id: 'city-dschang', name: 'Dschang', active: true },
+  { id: 'city-ebolowa', name: 'Ebolowa', active: true },
+  { id: 'city-garoua', name: 'Garoua', active: true },
+  { id: 'city-kribi', name: 'Kribi', active: true },
+  { id: 'city-maroua', name: 'Maroua', active: true },
+  { id: 'city-ngaoundere', name: 'Ngaoundéré', active: true },
+  { id: 'city-yaounde', name: 'Yaoundé', active: true },
 ];
 
 const mockGigs: Gig[] = [
@@ -145,7 +159,7 @@ const mockGigs: Gig[] = [
     studentRating: 4.8,
     title: 'Soutien scolaire et correction de devoirs',
     description: 'Mock UI: service exemple en attente de connexion Spring Boot.',
-    category: 'Academique',
+    category: 'Académique',
     location: 'Dschang',
     rating: 4.8,
     reviewCount: 12,
@@ -170,7 +184,7 @@ const mockRequests: GigRequest[] = [
     client_name: 'Marie Fotso',
     title: 'Besoin d aide pour un rapport',
     description: 'Mock UI: demande exemple en attente de connexion Spring Boot.',
-    category: 'Academique',
+    category: 'Académique',
     location: 'Dschang',
     budget: 15000,
     deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),

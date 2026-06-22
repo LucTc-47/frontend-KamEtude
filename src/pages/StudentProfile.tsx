@@ -11,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useProfile, useGigs, useReviewsByStudent, useStudentIncome } from "@/hooks/useUiData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,7 +23,7 @@ import autoTable from "jspdf-autotable";
 
 
 const StudentProfile = () => {
-  const { t, locale, language } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const levelColors: Record<string, string> = {
     [t.lvl_beginner]: "bg-muted text-muted-foreground",
@@ -36,6 +38,8 @@ const StudentProfile = () => {
   const { data: dbReviews } = useReviewsByStudent(id);
   const { data: income } = useStudentIncome(id);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const isOwner = !!user && user.id === id;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -140,10 +144,12 @@ const StudentProfile = () => {
       </Layout>
     );
   }
-  const getLevelLabel = (lvl: string) => {
-    if (lvl === "Débutant") return t.lvl_beginner;
-    if (lvl === "Intermédiaire") return t.lvl_intermediate;
-    if (lvl === "Avancé") return t.lvl_advanced;
+  const getLevelLabel = (lvl?: string | null) => {
+    const normalized = (lvl || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (!normalized) return t.lvl_beginner;
+    if (normalized.includes("butant")) return t.lvl_beginner;
+    if (normalized.includes("inter")) return t.lvl_intermediate;
+    if (normalized.includes("avanc")) return t.lvl_advanced;
     if (lvl === "Expert") return t.lvl_expert;
     return lvl;
   };
@@ -162,14 +168,15 @@ const StudentProfile = () => {
     responseTime: profile.response_time || '< 24h',
     memberSince: new Date(profile.created_at).toLocaleDateString(locale, { month: 'long', year: 'numeric' }),
     verified: profile.verified || false,
-    levelBadge: getLevelLabel(levelBadge),
+    levelBadge: getLevelLabel(profile.level_badge || profile.level),
     xp: profile.xp || 0,
     nextLevelXp: profile.next_level_xp || 100,
+    phone: profile.phone || '',
     skills: profile.skills || [],
   } : {
     name: t.student, avatar: '', university: '', faculty: '', level: '', city: '',
     bio: '', rating: 0, reviewCount: 0, completedJobs: 0, responseTime: '< 24h',
-    memberSince: '', verified: false, levelBadge: t.lvl_beginner, xp: 0, nextLevelXp: 100, skills: [],
+    memberSince: '', verified: false, levelBadge: t.lvl_beginner, xp: 0, nextLevelXp: 100, phone: '', skills: [],
   };
 
   const studentGigs = allGigs?.filter(g => g.studentId === id) || [];

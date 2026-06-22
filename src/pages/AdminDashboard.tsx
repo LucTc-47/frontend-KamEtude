@@ -5,7 +5,8 @@ import {
   Users, DollarSign, ShoppingBag, AlertTriangle, CheckCircle, XCircle,
   Eye, Search, TrendingUp, Shield, Clock, BarChart3,
   Ban, MapPin, Tag, Plus, Trash2, FileSpreadsheet, FileText, Loader2, LogOut,
-  ZoomIn, ZoomOut, Download, RotateCcw,
+  ZoomIn, ZoomOut, Download, RotateCcw, GraduationCap, Home, Monitor, PartyPopper,
+  Sparkles, Truck, Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   useAllProfiles, useAllOrders, useVerificationRequests, useUpdateVerification,
   useCategories, useAllCities, useCreateCategory, useToggleCategory, useDeleteCategory,
-  useCreateCity, useDeleteCity, useUpdateProfile, useReportedContent,
+  useCreateCity, useDeleteCity, useUpdateProfile, useReportedContent, useUpdateOrder,
 } from "@/hooks/useUiData";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -54,15 +55,26 @@ import autoTable from 'jspdf-autotable';
 
 type AdminTab = "dashboard" | "users" | "verifications" | "orders" | "moderation" | "categories" | "reports";
 
+const categoryIconMap = {
+  GraduationCap,
+  Home,
+  Monitor,
+  PartyPopper,
+  Sparkles,
+  Truck,
+  Wrench,
+} as const;
+
 const AdminDashboard = () => {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const canAccessAdmin = import.meta.env.DEV || user?.role === 'admin';
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
+    if (!loading && !canAccessAdmin) {
       navigate("/");
     }
-  }, [user, loading, navigate]);
+  }, [canAccessAdmin, loading, navigate]);
 
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -110,6 +122,7 @@ const AdminDashboard = () => {
   const createCity = useCreateCity();
   const deleteCity = useDeleteCity();
   const updateProfile = useUpdateProfile();
+  const updateOrder = useUpdateOrder();
 
   // ─── Computed stats ───
   const totalUsers = profiles.length;
@@ -597,22 +610,29 @@ const AdminDashboard = () => {
                   <Button size="sm" className="bg-gradient-hero" onClick={addCategory} disabled={createCategory.isPending}><Plus className="w-4 h-4" /></Button>
                 </div>
                 <div className="space-y-2">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg border border-border">
-                      <span className="text-sm font-medium text-foreground">{cat.icon} {cat.name}</span>
-                      <div className="flex gap-1">
-                        <Badge variant={cat.active ? "default" : "outline"} className={cat.active ? "bg-primary/10 text-primary" : ""}>
-                          {cat.active ? t.active : t.inactive}
-                        </Badge>
-                        <Button size="sm" variant="ghost" onClick={() => toggleCategory.mutate({ id: cat.id, active: !cat.active })}>
-                          <Eye className="w-3 h-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => deleteCategory.mutate(cat.id)}>
-                          <Trash2 className="w-3 h-3 text-destructive" />
-                        </Button>
+                  {categories.map((cat) => {
+                    const Icon = categoryIconMap[cat.icon as keyof typeof categoryIconMap] || Tag;
+
+                    return (
+                      <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg border border-border">
+                        <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <Icon className="w-4 h-4 text-primary" />
+                          {cat.name}
+                        </span>
+                        <div className="flex gap-1">
+                          <Badge variant={cat.active ? "default" : "outline"} className={cat.active ? "bg-primary/10 text-primary" : ""}>
+                            {cat.active ? t.active : t.inactive}
+                          </Badge>
+                          <Button size="sm" variant="ghost" onClick={() => toggleCategory.mutate({ id: cat.id, active: !cat.active })}>
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => deleteCategory.mutate(cat.id)}>
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t.ad_no_cats}</p>}
                 </div>
               </CardContent>

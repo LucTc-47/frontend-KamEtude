@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   AlertTriangle, CheckCircle, XCircle, DollarSign,
@@ -27,12 +28,13 @@ import { useQueryClient } from "@tanstack/react-query";
 const ModeratorDashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const canAccessModerator = import.meta.env.DEV || user?.role === 'moderator';
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'moderator')) {
+    if (!loading && !canAccessModerator) {
       navigate("/");
     }
-  }, [user, loading, navigate]);
+  }, [canAccessModerator, loading, navigate]);
 
   const { t, locale } = useLanguage();
   const { toast } = useToast();

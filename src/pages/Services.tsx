@@ -16,10 +16,30 @@ import { useGigs, useCities, useCategories } from "@/hooks/useUiData";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 
+const defaultCategories = [
+  "Académique",
+  "Aide à domicile",
+  "Beauté & Bien-être",
+  "Bricolage",
+  "Événementiel",
+  "Livraison & Courses",
+  "Numérique",
+];
+
+const normalizeCategory = (category: string) =>
+  category.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
 const categoryIcons: Record<string, any> = {
-  "Académique": GraduationCap, "Numérique": Monitor, "Aide à domicile": Home,
-  "Livraison & Courses": Truck, "Bricolage": Wrench, "Événementiel": PartyPopper, "Beauté & Bien-être": Sparkles,
+  academique: GraduationCap,
+  numerique: Monitor,
+  "aide a domicile": Home,
+  "livraison & courses": Truck,
+  bricolage: Wrench,
+  evenementiel: PartyPopper,
+  "beaute & bien-etre": Sparkles,
 };
+
+const getCategoryIcon = (category: string) => categoryIcons[normalizeCategory(category)] || Filter;
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -42,7 +62,7 @@ const Services = () => {
   const cities = dbCities ? dbCities.map(c => c.name) : [];
   const allCategories = dbCategories
     ? dbCategories.filter(c => c.active).map(c => c.name)
-    : Object.keys(categoryIcons);
+    : defaultCategories;
 
   const initialCat = searchParams.get("categorie") || "";
   const [selectedCategory, setSelectedCategory] = useState(initialCat);
@@ -139,7 +159,7 @@ const Services = () => {
               <Filter className="w-4 h-4 mr-1" /> {t.sv_all}
             </Button>
             {allCategories.map((cat) => {
-              const Icon = categoryIcons[cat] || Filter;
+              const Icon = getCategoryIcon(cat);
               return (
                 <Button key={cat} size="sm" variant={selectedCategory === cat ? "default" : "outline"} className={selectedCategory === cat ? "bg-gradient-hero" : ""} onClick={() => setSelectedCategory(cat)}>
                   <Icon className="w-4 h-4 mr-1" /> {cat}
