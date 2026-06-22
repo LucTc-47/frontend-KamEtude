@@ -21,6 +21,47 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
 
+const createMockNotifications = (role?: string): AppNotification[] => {
+  const now = Date.now();
+  const base: AppNotification[] = [
+    {
+      id: 'stub-notif-order-delivered',
+      title: 'Livrable disponible',
+      description: 'Aline a depose un livrable pour votre commande de correction.',
+      type: 'order',
+      link: '/mes-commandes',
+      read: false,
+      createdAt: new Date(now - 25 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'stub-notif-message',
+      title: 'Nouveau message',
+      description: 'Un message client attend une reponse dans le chat de mission.',
+      type: 'message',
+      link: role === 'student' ? '/mes-missions' : '/mes-commandes',
+      read: false,
+      createdAt: new Date(now - 90 * 60 * 1000).toISOString(),
+    },
+  ];
+
+  if (role === 'student') {
+    return [
+      ...base,
+      {
+        id: 'stub-notif-proposal',
+        title: 'Proposition acceptee',
+        description: 'Une de vos propositions est devenue une mission active.',
+        type: 'proposal',
+        link: '/mes-propositions',
+        read: true,
+        createdAt: new Date(now - 26 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+  }
+
+  return base;
+};
+
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const storageKey = `notifs_${user?.id || 'guest'}`;
@@ -28,8 +69,17 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
-    setNotifications(saved ? JSON.parse(saved) : []);
-  }, [storageKey]);
+    if (saved) {
+      try {
+        setNotifications(JSON.parse(saved));
+        return;
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    setNotifications(user ? createMockNotifications(user.role) : []);
+  }, [storageKey, user]);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(notifications));

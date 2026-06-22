@@ -81,6 +81,9 @@ export interface RequestProposal {
   };
 }
 
+const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+const daysAgo = (days: number) => daysFromNow(-days);
+
 const stubTier = (name: string, price: number, deliveryDays: number): GigTier => ({
   name,
   price,
@@ -123,6 +126,53 @@ const mockProfiles: ProfileRecord[] = [
     verified: false,
     banned: false,
     created_at: new Date('2026-02-10').toISOString(),
+  },
+  {
+    user_id: 'stub-student-2',
+    first_name: 'Samuel',
+    last_name: 'Talla',
+    email: 'samuel.talla@kametud.local',
+    phone: '675123456',
+    role: 'student',
+    city: 'Yaoundé',
+    university: 'Universite de Yaounde I',
+    faculty: 'Informatique',
+    level: 'Master 1',
+    bio: 'Developpeur web et assistant numerique disponible pour maquettes, sites vitrines et depannage logiciel.',
+    skills: ['Developpement web', 'Excel', 'Support informatique'],
+    avatar_url: null,
+    verified: true,
+    banned: false,
+    rating: 4.6,
+    review_count: 8,
+    completed_jobs: 11,
+    xp: 180,
+    level_badge: 'Intermediaire',
+    created_at: new Date('2026-03-04').toISOString(),
+  },
+  {
+    user_id: 'stub-client-2',
+    first_name: 'Joel',
+    last_name: 'Manga',
+    email: 'joel.manga@kametud.local',
+    phone: '699222111',
+    role: 'client',
+    city: 'Douala',
+    verified: false,
+    banned: false,
+    created_at: new Date('2026-04-18').toISOString(),
+  },
+  {
+    user_id: 'stub-client-banned',
+    first_name: 'Carine',
+    last_name: 'Essomba',
+    email: 'carine.essomba@kametud.local',
+    phone: '650111222',
+    role: 'client',
+    city: 'Bafoussam',
+    verified: false,
+    banned: true,
+    created_at: new Date('2026-05-03').toISOString(),
   },
 ];
 
@@ -175,6 +225,98 @@ const mockGigs: Gig[] = [
       premium: stubTier('Premium', 18000, 7),
     },
   },
+  {
+    id: 'stub-gig-2',
+    studentId: 'stub-student-2',
+    studentName: 'Samuel Talla',
+    studentRating: 4.6,
+    title: 'Creation de site vitrine React',
+    description: 'Landing page responsive, formulaire de contact et mise en ligne guidee pour petites activites.',
+    category: 'Numérique',
+    location: 'Yaoundé',
+    rating: 4.6,
+    reviewCount: 8,
+    orderCount: 11,
+    badge: 'Verifie',
+    images: [],
+    active: true,
+    published: true,
+    gpsLocation: { lat: 3.8667, lng: 11.5167 },
+    tiers: {
+      basique: stubTier('Audit', 12000, 2),
+      standard: stubTier('Site simple', 45000, 5),
+      premium: stubTier('Site complet', 85000, 10),
+    },
+  },
+  {
+    id: 'stub-gig-3',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    studentRating: 4.8,
+    title: 'Aide a domicile et courses',
+    description: 'Courses rapides, rangement leger et aide ponctuelle autour du campus.',
+    category: 'Aide à domicile',
+    location: 'Dschang',
+    rating: 4.7,
+    reviewCount: 5,
+    orderCount: 9,
+    badge: 'Rapide',
+    images: [],
+    active: true,
+    published: true,
+    gpsLocation: { lat: 5.447, lng: 10.071 },
+    tiers: {
+      basique: stubTier('Course simple', 3000, 1),
+      standard: stubTier('Demi-journee', 8000, 1),
+      premium: stubTier('Journee complete', 15000, 2),
+    },
+  },
+  {
+    id: 'stub-gig-4',
+    studentId: 'stub-student-2',
+    studentName: 'Samuel Talla',
+    studentRating: 4.6,
+    title: 'Depannage ordinateur et installation logiciels',
+    description: 'Nettoyage, installation bureautique, sauvegarde et configuration de base.',
+    category: 'Bricolage',
+    location: 'Douala',
+    rating: 4.5,
+    reviewCount: 6,
+    orderCount: 7,
+    badge: 'Expert',
+    images: [],
+    active: true,
+    published: true,
+    gpsLocation: { lat: 4.0511, lng: 9.7679 },
+    tiers: {
+      basique: stubTier('Diagnostic', 7000, 1),
+      standard: stubTier('Intervention', 18000, 2),
+      premium: stubTier('Pack complet', 32000, 3),
+    },
+  },
+  {
+    id: 'stub-gig-5',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    studentRating: 4.8,
+    title: 'Decoration simple pour anniversaire',
+    description: 'Decoration de petite salle, table principale et coordination du materiel.',
+    category: 'Événementiel',
+    location: 'Bafoussam',
+    rating: 4.9,
+    reviewCount: 4,
+    orderCount: 6,
+    badge: 'Coup de coeur',
+    images: [],
+    active: true,
+    published: false,
+    gpsLocation: { lat: 5.4781, lng: 10.4176 },
+    tiers: {
+      basique: stubTier('Coin photo', 10000, 2),
+      standard: stubTier('Salle simple', 25000, 4),
+      premium: stubTier('Pack complet', 45000, 6),
+    },
+  },
 ];
 
 const mockRequests: GigRequest[] = [
@@ -187,10 +329,52 @@ const mockRequests: GigRequest[] = [
     category: 'Académique',
     location: 'Dschang',
     budget: 15000,
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    deadline: daysFromNow(7),
     status: 'open',
     accepted_proposal_id: null,
-    created_at: new Date().toISOString(),
+    created_at: daysAgo(1),
+  },
+  {
+    id: 'stub-request-2',
+    client_id: 'stub-client-2',
+    client_name: 'Joel Manga',
+    title: 'Creation d une affiche pour un tournoi',
+    description: 'Besoin d une affiche carree pour WhatsApp et Facebook, avec deux propositions de couleurs.',
+    category: 'Numérique',
+    location: 'Douala',
+    budget: 18000,
+    deadline: daysFromNow(5),
+    status: 'open',
+    accepted_proposal_id: null,
+    created_at: daysAgo(2),
+  },
+  {
+    id: 'stub-request-3',
+    client_id: 'stub-client-1',
+    client_name: 'Marie Fotso',
+    title: 'Aide pour demenagement de chambre',
+    description: 'Transport de cartons entre deux logements et aide au rangement pendant une demi-journee.',
+    category: 'Aide à domicile',
+    location: 'Dschang',
+    budget: 22000,
+    deadline: daysFromNow(3),
+    status: 'assigned',
+    accepted_proposal_id: 'stub-proposal-2',
+    created_at: daysAgo(5),
+  },
+  {
+    id: 'stub-request-4',
+    client_id: 'stub-client-2',
+    client_name: 'Joel Manga',
+    title: 'Photographe pour petit anniversaire',
+    description: 'Couverture photo de deux heures et livraison de 30 photos retouchees.',
+    category: 'Événementiel',
+    location: 'Yaoundé',
+    budget: 35000,
+    deadline: daysFromNow(10),
+    status: 'open',
+    accepted_proposal_id: null,
+    created_at: daysAgo(3),
   },
 ];
 
@@ -202,19 +386,400 @@ const mockProposals: RequestProposal[] = [
     student_name: 'Aline Nkem',
     price: 14000,
     delivery_days: 4,
-    message: 'Mock UI: proposition exemple.',
+    message: 'Je peux relire, corriger la structure et mettre en forme le rapport avec une synthese claire.',
     status: 'pending',
-    created_at: new Date().toISOString(),
+    created_at: daysAgo(1),
     gig_requests: { title: 'Besoin d aide pour un rapport', budget: 15000, status: 'open' },
+  },
+  {
+    id: 'stub-proposal-2',
+    request_id: 'stub-request-3',
+    student_id: 'stub-student-1',
+    student_name: 'Aline Nkem',
+    price: 20000,
+    delivery_days: 1,
+    message: 'Disponible samedi matin avec un camarade pour accelerer le rangement.',
+    status: 'accepted',
+    created_at: daysAgo(4),
+    gig_requests: { title: 'Aide pour demenagement de chambre', budget: 22000, status: 'assigned' },
+  },
+  {
+    id: 'stub-proposal-3',
+    request_id: 'stub-request-2',
+    student_id: 'stub-student-2',
+    student_name: 'Samuel Talla',
+    price: 16000,
+    delivery_days: 2,
+    message: 'Je peux proposer deux directions graphiques et livrer les fichiers PNG et PDF.',
+    status: 'pending',
+    created_at: daysAgo(2),
+    gig_requests: { title: 'Creation d une affiche pour un tournoi', budget: 18000, status: 'open' },
+  },
+  {
+    id: 'stub-proposal-4',
+    request_id: 'stub-request-4',
+    student_id: 'stub-student-1',
+    student_name: 'Aline Nkem',
+    price: 38000,
+    delivery_days: 5,
+    message: 'Je peux aider pour la coordination et recommander un photographe etudiant.',
+    status: 'rejected',
+    created_at: daysAgo(2),
+    gig_requests: { title: 'Photographe pour petit anniversaire', budget: 35000, status: 'open' },
   },
 ];
 
-const emptyOrders: OrderWithMeta[] = [];
-const emptyMessages: ChatMessage[] = [];
-const emptyReviews: Review[] = [];
-const emptyDisputes: Dispute[] = [];
-const emptyVerifications: VerificationRequest[] = [];
-const emptyReportedContent: ReportedContent[] = [];
+const mockOrders: OrderWithMeta[] = [
+  {
+    id: 'stub-order-1',
+    gigId: 'stub-gig-1',
+    gigTitle: 'Soutien scolaire et correction de devoirs',
+    clientId: 'stub-client-1',
+    clientName: 'Marie Fotso',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    tier: 'standard',
+    description: 'Correction d un rapport de 12 pages avec bibliographie et reformulation des introductions.',
+    budget: 10000,
+    status: 'pending',
+    revisionsLeft: 2,
+    deliveryDate: daysFromNow(4),
+    createdAt: daysAgo(1),
+    escrowAmount: 10000,
+    paymentMethod: 'mtn',
+    payment_status: 'pending',
+    payout_status: 'not_started',
+  },
+  {
+    id: 'stub-order-2',
+    gigId: 'stub-gig-2',
+    gigTitle: 'Creation de site vitrine React',
+    clientId: 'stub-client-2',
+    clientName: 'Joel Manga',
+    studentId: 'stub-student-2',
+    studentName: 'Samuel Talla',
+    tier: 'standard',
+    description: 'Page de presentation pour un petit commerce avec section services, contact et WhatsApp.',
+    budget: 45000,
+    status: 'in_progress',
+    revisionsLeft: 2,
+    deliveryDate: daysFromNow(6),
+    createdAt: daysAgo(3),
+    escrowAmount: 45000,
+    paymentMethod: 'orange',
+    payment_status: 'paid',
+    payout_status: 'pending',
+  },
+  {
+    id: 'stub-order-3',
+    gigId: 'stub-gig-1',
+    gigTitle: 'Soutien scolaire et correction de devoirs',
+    clientId: 'stub-client-2',
+    clientName: 'Joel Manga',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    tier: 'premium',
+    description: 'Preparation d une presentation orale et correction des slides.',
+    budget: 18000,
+    status: 'delivered',
+    revisionsLeft: 1,
+    deliveryDate: daysAgo(1),
+    createdAt: daysAgo(7),
+    escrowAmount: 18000,
+    paymentMethod: 'mtn',
+    deliverableUrl: '/placeholder.svg',
+    deliverableNote: 'Slides corriges, notes de presentation ajoutees et conseils de prise de parole inclus.',
+    delivered_at: daysAgo(4),
+    payment_status: 'paid',
+    payout_status: 'pending',
+  },
+  {
+    id: 'stub-order-4',
+    gigId: 'stub-gig-3',
+    gigTitle: 'Aide a domicile et courses',
+    clientId: 'stub-client-1',
+    clientName: 'Marie Fotso',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    tier: 'basique',
+    description: 'Courses urgentes au marche et livraison a la cite universitaire.',
+    budget: 3000,
+    status: 'completed',
+    revisionsLeft: 0,
+    deliveryDate: daysAgo(8),
+    createdAt: daysAgo(10),
+    escrowAmount: 3000,
+    paymentMethod: 'mtn',
+    deliverableNote: 'Courses livrees et confirmees par le client.',
+    delivered_at: daysAgo(8),
+    payment_status: 'paid',
+    payout_status: 'paid',
+  },
+  {
+    id: 'stub-order-5',
+    gigId: 'stub-gig-4',
+    gigTitle: 'Depannage ordinateur et installation logiciels',
+    clientId: 'stub-client-1',
+    clientName: 'Marie Fotso',
+    studentId: 'stub-student-2',
+    studentName: 'Samuel Talla',
+    tier: 'standard',
+    description: 'Ordinateur lent, installation bureautique et sauvegarde des fichiers cours.',
+    budget: 18000,
+    status: 'disputed',
+    revisionsLeft: 1,
+    deliveryDate: daysAgo(2),
+    createdAt: daysAgo(6),
+    escrowAmount: 18000,
+    paymentMethod: 'orange',
+    deliverableNote: 'Intervention terminee mais le client signale encore un probleme de demarrage.',
+    delivered_at: daysAgo(2),
+    payment_status: 'paid',
+    payout_status: 'blocked',
+  },
+  {
+    id: 'stub-order-6',
+    gigId: 'stub-gig-5',
+    gigTitle: 'Decoration simple pour anniversaire',
+    clientId: 'stub-client-2',
+    clientName: 'Joel Manga',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    tier: 'basique',
+    description: 'Preparation d un coin photo pour anniversaire familial.',
+    budget: 10000,
+    status: 'cancelled',
+    revisionsLeft: 2,
+    deliveryDate: daysFromNow(2),
+    createdAt: daysAgo(2),
+    escrowAmount: 0,
+    paymentMethod: 'mtn',
+    payment_status: 'cancelled',
+    payout_status: 'not_started',
+  },
+];
+
+const mockMessages: ChatMessage[] = [
+  {
+    id: 'stub-msg-1',
+    orderId: 'stub-order-2',
+    senderId: 'stub-client-2',
+    senderName: 'Joel Manga',
+    content: 'Bonjour Samuel, je veux une page simple avec les couleurs vert et blanc.',
+    timestamp: daysAgo(3),
+    type: 'text',
+  },
+  {
+    id: 'stub-msg-2',
+    orderId: 'stub-order-2',
+    senderId: 'stub-student-2',
+    senderName: 'Samuel Talla',
+    content: 'Bien recu. Je commence par une maquette et je vous envoie un lien de preview ce soir.',
+    timestamp: daysAgo(2),
+    type: 'text',
+  },
+  {
+    id: 'stub-msg-3',
+    orderId: 'stub-order-3',
+    senderId: 'system',
+    senderName: 'KamEtud',
+    content: 'Le livrable a ete depose. Le client peut valider ou demander une revision.',
+    timestamp: daysAgo(1),
+    type: 'system',
+  },
+  {
+    id: 'stub-msg-4',
+    orderId: 'stub-order-5',
+    senderId: 'stub-client-1',
+    senderName: 'Marie Fotso',
+    content: 'Le PC redemarre encore tout seul. Je pense qu il faut revoir la configuration.',
+    timestamp: daysAgo(1),
+    type: 'text',
+  },
+  {
+    id: 'stub-msg-5',
+    orderId: 'stub-order-5',
+    senderId: 'stub-student-2',
+    senderName: 'Samuel Talla',
+    content: 'Je peux refaire un diagnostic et joindre les captures au moderateur.',
+    timestamp: daysAgo(1),
+    type: 'text',
+  },
+];
+
+const mockReviews: Review[] = [
+  {
+    id: 'stub-review-1',
+    orderId: 'stub-order-4',
+    gigId: 'stub-gig-3',
+    reviewerId: 'stub-client-1',
+    reviewerName: 'Marie Fotso',
+    studentId: 'stub-student-1',
+    rating: 5,
+    text: 'Tres ponctuelle, communication claire et service rendu sans stress.',
+    date: daysAgo(8),
+    reported: false,
+  },
+  {
+    id: 'stub-review-2',
+    orderId: 'stub-order-7',
+    gigId: 'stub-gig-1',
+    reviewerId: 'stub-client-2',
+    reviewerName: 'Joel Manga',
+    studentId: 'stub-student-1',
+    rating: 4,
+    text: 'Bon travail de correction, avec des remarques utiles pour ameliorer le fond.',
+    date: daysAgo(15),
+    reported: false,
+  },
+  {
+    id: 'stub-review-3',
+    orderId: 'stub-order-8',
+    gigId: 'stub-gig-2',
+    reviewerId: 'stub-client-1',
+    reviewerName: 'Marie Fotso',
+    studentId: 'stub-student-2',
+    rating: 5,
+    text: 'Samuel a livre une maquette propre et a explique comment modifier le contenu.',
+    date: daysAgo(12),
+    reported: false,
+  },
+];
+
+const mockDisputes: Dispute[] = [
+  {
+    id: 'stub-dispute-1',
+    orderId: 'stub-order-5',
+    gigTitle: 'Depannage ordinateur et installation logiciels',
+    clientId: 'stub-client-1',
+    clientName: 'Marie Fotso',
+    clientStatement: 'Le probleme de redemarrage persiste apres l intervention.',
+    studentId: 'stub-student-2',
+    studentName: 'Samuel Talla',
+    studentStatement: 'J ai termine la configuration demandee, mais le disque semble defectueux.',
+    status: 'open',
+    createdAt: daysAgo(1),
+  },
+  {
+    id: 'stub-dispute-2',
+    orderId: 'stub-order-9',
+    gigTitle: 'Correction de memoire',
+    clientId: 'stub-client-2',
+    clientName: 'Joel Manga',
+    clientStatement: 'Le document final ne respecte pas toutes les consignes.',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    studentStatement: 'Les consignes ajoutees apres validation initiale changent le perimetre.',
+    status: 'under_review',
+    createdAt: daysAgo(3),
+  },
+  {
+    id: 'stub-dispute-3',
+    orderId: 'stub-order-10',
+    gigTitle: 'Aide a domicile et courses',
+    clientId: 'stub-client-1',
+    clientName: 'Marie Fotso',
+    clientStatement: 'Une partie des courses etait manquante.',
+    studentId: 'stub-student-1',
+    studentName: 'Aline Nkem',
+    studentStatement: 'Le produit manquant etait indisponible et le client a ete rembourse.',
+    status: 'resolved_client',
+    moderatorId: 'stub-moderator-1',
+    moderatorNote: 'Remboursement partiel valide apres verification des messages.',
+    createdAt: daysAgo(12),
+    resolvedAt: daysAgo(10),
+  },
+];
+
+const mockVerificationRequests: any[] = [
+  {
+    id: 'stub-verification-1',
+    student_id: 'stub-student-2',
+    studentId: 'stub-student-2',
+    student_name: 'Samuel Talla',
+    studentName: 'Samuel Talla',
+    email: 'samuel.talla@kametud.local',
+    university: 'Universite de Yaounde I',
+    id_type: 'CNI',
+    idType: 'CNI',
+    id_file_url: '/placeholder.svg',
+    idFileUrl: '/placeholder.svg',
+    student_card_url: '/placeholder.svg',
+    studentCardUrl: '/placeholder.svg',
+    selfie_url: '/placeholder.svg',
+    selfieUrl: '/placeholder.svg',
+    status: 'pending',
+    submitted_at: daysAgo(1),
+    submittedAt: daysAgo(1),
+  },
+  {
+    id: 'stub-verification-2',
+    student_id: 'stub-student-1',
+    studentId: 'stub-student-1',
+    student_name: 'Aline Nkem',
+    studentName: 'Aline Nkem',
+    email: 'aline.nkem@kametud.local',
+    university: 'Universite de Dschang',
+    id_type: 'Passeport',
+    idType: 'Passeport',
+    id_file_url: '/placeholder.svg',
+    idFileUrl: '/placeholder.svg',
+    student_card_url: '/placeholder.svg',
+    studentCardUrl: '/placeholder.svg',
+    selfie_url: '/placeholder.svg',
+    selfieUrl: '/placeholder.svg',
+    status: 'approved',
+    submitted_at: daysAgo(20),
+    submittedAt: daysAgo(20),
+  },
+  {
+    id: 'stub-verification-3',
+    student_id: 'stub-student-3',
+    studentId: 'stub-student-3',
+    student_name: 'Nadia Mefire',
+    studentName: 'Nadia Mefire',
+    email: 'nadia.mefire@kametud.local',
+    university: 'Universite de Douala',
+    id_type: 'CNI',
+    idType: 'CNI',
+    id_file_url: '/placeholder.svg',
+    idFileUrl: '/placeholder.svg',
+    student_card_url: '/placeholder.svg',
+    studentCardUrl: '/placeholder.svg',
+    selfie_url: '/placeholder.svg',
+    selfieUrl: '/placeholder.svg',
+    status: 'rejected',
+    submitted_at: daysAgo(6),
+    submittedAt: daysAgo(6),
+  },
+];
+
+const mockReportedContent: any[] = [
+  {
+    id: 'stub-report-1',
+    type: 'review',
+    title: 'Avis signale sur depannage ordinateur',
+    reporter: 'Marie Fotso',
+    reason: 'Langage agressif dans la reponse',
+    date: daysAgo(2),
+    status: 'pending',
+    text: 'Le prestataire ne repond plus depuis la livraison.',
+    rating: 2,
+    reviewer_name: 'Marie Fotso',
+  },
+  {
+    id: 'stub-report-2',
+    type: 'gig',
+    title: 'Service numerique a verifier',
+    reporter: 'Joel Manga',
+    reason: 'Description potentiellement trompeuse',
+    date: daysAgo(5),
+    status: 'pending',
+    text: 'Le service promet une livraison trop rapide pour le volume annonce.',
+    rating: 3,
+    reviewer_name: 'Joel Manga',
+  },
+];
 
 function useStubQuery<T>(queryKey: QueryKey, data: T, enabled = true) {
   return useQuery<T>({
@@ -287,13 +852,13 @@ export function useDeleteGig() {
 // TODO(backend): reconnecter les commandes client via Spring Boot (GET /orders?role=client).
 export function useMyOrders() {
   const { user } = useAuth();
-  return useStubQuery<OrderWithMeta[]>(['my-orders', user?.id], emptyOrders, !!user);
+  return useStubQuery<OrderWithMeta[]>(['my-orders', user?.id], mockOrders, !!user);
 }
 
 // TODO(backend): reconnecter les missions etudiant via Spring Boot (GET /orders?role=student).
 export function useMyMissions() {
   const { user } = useAuth();
-  return useStubQuery<OrderWithMeta[]>(['my-missions', user?.id], emptyOrders, !!user);
+  return useStubQuery<OrderWithMeta[]>(['my-missions', user?.id], mockOrders, !!user);
 }
 
 // TODO(backend): reconnecter la creation de commande via Spring Boot (POST /orders).
@@ -336,7 +901,7 @@ export function useUpdateOrder() {
 
 // TODO(backend): reconnecter les messages d'une commande via Spring Boot (GET /orders/{id}/messages).
 export function useChatMessages(orderId: string | null) {
-  return useStubQuery<ChatMessage[]>(['chat', orderId], emptyMessages, !!orderId);
+  return useStubQuery<ChatMessage[]>(['chat', orderId], mockMessages.filter(message => message.orderId === orderId), !!orderId);
 }
 
 // TODO(backend): reconnecter l'envoi de message via Spring Boot (POST /orders/{id}/messages).
@@ -346,7 +911,8 @@ export function useSendMessage() {
 
 // TODO(backend): reconnecter les avis d'un etudiant via Spring Boot (GET /students/{id}/reviews).
 export function useReviewsByStudent(studentId: string | undefined) {
-  return useStubQuery<Review[]>(['reviews', studentId], emptyReviews, !!studentId);
+  const reviews = mockReviews.filter(review => review.studentId === studentId);
+  return useStubQuery<Review[]>(['reviews', studentId], reviews.length ? reviews : mockReviews.filter(review => review.studentId === 'stub-student-1'), !!studentId);
 }
 
 // TODO(backend): reconnecter la creation d'avis via Spring Boot (POST /reviews).
@@ -356,7 +922,7 @@ export function useCreateReview() {
 
 // TODO(backend): reconnecter la liste des litiges via Spring Boot (GET /moderation/disputes).
 export function useDisputes() {
-  return useStubQuery<Dispute[]>(['disputes'], emptyDisputes);
+  return useStubQuery<Dispute[]>(['disputes'], mockDisputes);
 }
 
 // TODO(backend): reconnecter l'arbitrage de litige via Spring Boot (PATCH /moderation/disputes/{id}).
@@ -371,7 +937,7 @@ export function useCreateDispute() {
 
 // TODO(backend): reconnecter les demandes KYC via Spring Boot (GET /admin/verifications).
 export function useVerificationRequests() {
-  return useStubQuery<VerificationRequest[]>(['verifications'], emptyVerifications);
+  return useStubQuery<VerificationRequest[]>(['verifications'], mockVerificationRequests);
 }
 
 // TODO(backend): reconnecter l'approbation/rejet KYC via Spring Boot (PATCH /admin/verifications/{id}).
@@ -409,17 +975,21 @@ export function useAllProfiles() {
 
 // TODO(backend): reconnecter toutes les commandes admin via Spring Boot (GET /admin/orders).
 export function useAllOrders() {
-  return useStubQuery<OrderWithMeta[]>(['all-orders'], emptyOrders);
+  return useStubQuery<OrderWithMeta[]>(['all-orders'], mockOrders);
 }
 
 // TODO(backend): reconnecter le revenu etudiant via Spring Boot (GET /students/{id}/income).
 export function useStudentIncome(studentId: string | undefined) {
-  return useStubQuery<{ completed: number; pending: number; count: number }>(['student-income', studentId], { completed: 0, pending: 0, count: 0 }, !!studentId);
+  return useStubQuery<{ completed: number; pending: number; count: number }>(
+    ['student-income', studentId],
+    { completed: 126000, pending: 81000, count: 7 },
+    !!studentId,
+  );
 }
 
 // TODO(backend): reconnecter les contenus signales via Spring Boot (GET /admin/reports).
 export function useReportedContent() {
-  return useStubQuery<ReportedContent[]>(['reported-content'], emptyReportedContent);
+  return useStubQuery<ReportedContent[]>(['reported-content'], mockReportedContent);
 }
 
 // TODO(backend): reconnecter la creation de categorie via Spring Boot (POST /admin/categories).

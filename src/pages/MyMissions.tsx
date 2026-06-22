@@ -23,6 +23,7 @@ import type { Order, OrderStatus } from "@/types";
 const MyMissions = () => {
   const { t, locale } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const statusConfig: Record<OrderStatus, { label: string; className: string; icon: any }> = {
     pending: { label: t.st_pending, className: "bg-muted text-muted-foreground", icon: Clock },

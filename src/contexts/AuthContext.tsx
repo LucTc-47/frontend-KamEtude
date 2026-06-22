@@ -26,6 +26,10 @@ export interface LocalSession {
   createdAt: string;
 }
 
+export type MockAuthAccount = AppUser & {
+  password: string;
+};
+
 interface AuthContextType {
   user: AppUser | null;
   session: LocalSession | null;
@@ -54,11 +58,76 @@ interface AuthContextType {
 const STORAGE_KEY = 'kametud_stub_auth';
 const AuthContext = createContext<AuthContextType | null>(null);
 
+export const MOCK_AUTH_ACCOUNTS: MockAuthAccount[] = [
+  {
+    id: 'stub-admin-1',
+    firstName: 'Admin',
+    lastName: 'KamEtud',
+    email: 'admin@kametud.local',
+    password: 'demo1234',
+    phone: '690000001',
+    role: 'admin',
+    city: 'Dschang',
+    verified: true,
+    banned: false,
+    createdAt: new Date('2026-01-01').toISOString(),
+  },
+  {
+    id: 'stub-moderator-1',
+    firstName: 'Mod',
+    lastName: 'KamEtud',
+    email: 'moderateur@kametud.local',
+    password: 'demo1234',
+    phone: '690000002',
+    role: 'moderator',
+    city: 'Dschang',
+    verified: true,
+    banned: false,
+    createdAt: new Date('2026-01-02').toISOString(),
+  },
+  {
+    id: 'stub-client-1',
+    firstName: 'Marie',
+    lastName: 'Fotso',
+    email: 'marie.fotso@kametud.local',
+    password: 'demo1234',
+    phone: '690000003',
+    role: 'client',
+    city: 'Dschang',
+    verified: false,
+    banned: false,
+    createdAt: new Date('2026-02-10').toISOString(),
+  },
+  {
+    id: 'stub-student-1',
+    firstName: 'Aline',
+    lastName: 'Nkem',
+    email: 'aline.nkem@kametud.local',
+    password: 'demo1234',
+    phone: '690000004',
+    role: 'student',
+    city: 'Dschang',
+    verified: true,
+    banned: false,
+    createdAt: new Date('2026-01-15').toISOString(),
+  },
+];
+
 const createSession = (userId: string): LocalSession => ({
   accessToken: `stub-token-${userId}`,
   userId,
   createdAt: new Date().toISOString(),
 });
+
+const toAppUser = ({ password: _password, ...account }: MockAuthAccount): AppUser => account;
+
+const findMockAccountByEmail = (email: string) =>
+  MOCK_AUTH_ACCOUNTS.find(account => account.email.toLowerCase() === email.trim().toLowerCase());
+
+const findMockAccountByPhone = (phone: string) => {
+  const normalized = phone.replace(/\D/g, '');
+  return MOCK_AUTH_ACCOUNTS.find(account => account.phone.replace(/\D/g, '') === normalized);
+};
 
 const createStubUser = (input: {
   email?: string;
@@ -111,9 +180,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, session]);
 
-  const login = async (email: string, _password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     // TODO(backend): reconnecter la connexion email/mot de passe via Spring Boot (endpoint login Spring Boot).
-    const nextUser = createStubUser({ email });
+    const mockAccount = findMockAccountByEmail(email);
+    if (mockAccount && mockAccount.password !== password) return false;
+
+    const nextUser = mockAccount ? toAppUser(mockAccount) : createStubUser({ email });
     setUser(nextUser);
     setSession(createSession(nextUser.id));
     return true;
@@ -124,9 +196,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
-  const loginWithPhone = async (phone: string, _otp: string): Promise<boolean> => {
+  const loginWithPhone = async (phone: string, otp: string): Promise<boolean> => {
     // TODO(backend): reconnecter la verification OTP via Spring Boot (endpoint verification OTP Spring Boot).
-    const nextUser = createStubUser({ phone, email: `${phone.replace(/\D/g, '') || 'phone'}@phone.kametud.local` });
+    if (otp !== '123456') return false;
+
+    const mockAccount = findMockAccountByPhone(phone);
+    const nextUser = mockAccount ? toAppUser(mockAccount) : createStubUser({ phone, email: `${phone.replace(/\D/g, '') || 'phone'}@phone.kametud.local` });
     setUser(nextUser);
     setSession(createSession(nextUser.id));
     return true;
