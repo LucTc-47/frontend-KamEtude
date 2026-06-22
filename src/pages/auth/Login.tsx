@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { GoogleButton } from "@/components/auth/GoogleButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -23,6 +25,7 @@ const Login = () => {
   const { toast } = useToast();
   const { login, loginWithPhone, sendPhoneOtp } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,10 +34,10 @@ const Login = () => {
     const success = await login(email, password);
     setIsLoading(false);
     if (success) {
-      toast({ title: "Connexion réussie", description: "Bienvenue sur Kam'Etud !" });
+      toast({ title: t.au_login_ok, description: t.au_login_welcome });
       navigate("/");
     } else {
-      setError("Email ou mot de passe incorrect.");
+      setError(t.au_err_creds);
     }
   };
 
@@ -45,9 +48,9 @@ const Login = () => {
     setIsLoading(false);
     if (success) {
       setOtpSent(true);
-      toast({ title: "Code envoyé !", description: `Un code OTP a été envoyé au ${phone}` });
+      toast({ title: t.au_otp_sent, description: `${t.au_otp_sent_desc} ${phone}` });
     } else {
-      toast({ title: "Erreur", description: "Impossible d'envoyer le code.", variant: "destructive" });
+      toast({ title: t.c_error, description: t.au_otp_err, variant: "destructive" });
     }
   };
 
@@ -57,10 +60,10 @@ const Login = () => {
     const success = await loginWithPhone(phone, otp);
     setIsLoading(false);
     if (success) {
-      toast({ title: "Connexion réussie", description: "Bienvenue sur Kam'Etud !" });
+      toast({ title: t.au_login_ok, description: t.au_login_welcome });
       navigate("/");
     } else {
-      setError("Code OTP invalide.");
+      setError(t.au_err_otp);
     }
   };
 
@@ -76,23 +79,30 @@ const Login = () => {
               Kam'<span className="text-gradient-primary">Etud</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-display font-bold text-foreground">Connexion</h1>
-          <p className="text-muted-foreground mt-1">Accédez à votre compte</p>
+          <h1 className="text-2xl font-display font-bold text-foreground">{t.login}</h1>
+          <p className="text-muted-foreground mt-1">{t.au_welcome_subtitle}</p>
         </div>
 
         <Card className="shadow-elevated border-border/50">
           <CardContent className="pt-6">
+            <div className="space-y-3 mb-4">
+              <GoogleButton label={t.au_google_signin} />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">{t.au_or}</span></div>
+              </div>
+            </div>
             <Tabs defaultValue="email">
               <TabsList className="w-full mb-4">
-                <TabsTrigger value="email" className="flex-1"><Mail className="w-4 h-4 mr-1" /> Email</TabsTrigger>
-                <TabsTrigger value="phone" className="flex-1"><Phone className="w-4 h-4 mr-1" /> Téléphone</TabsTrigger>
+                <TabsTrigger value="email" className="flex-1"><Mail className="w-4 h-4 mr-1" /> {t.au_email}</TabsTrigger>
+                <TabsTrigger value="phone" className="flex-1"><Phone className="w-4 h-4 mr-1" /> {t.au_phone}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="email">
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                   {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</p>}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t.au_email}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input id="email" type="email" placeholder="votre@email.com" className="pl-10" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -100,8 +110,8 @@ const Login = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <Label htmlFor="password">Mot de passe</Label>
-                      <Link to="/mot-de-passe-oublie" className="text-xs text-primary hover:underline">Oublié ?</Link>
+                      <Label htmlFor="password">{t.au_password}</Label>
+                      <Link to="/mot-de-passe-oublie" className="text-xs text-primary hover:underline">{t.au_forgot}</Link>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -112,7 +122,7 @@ const Login = () => {
                     </div>
                   </div>
                   <Button type="submit" className="w-full bg-gradient-hero hover:opacity-90" disabled={isLoading}>
-                    {isLoading ? "Connexion..." : "Se connecter"}
+                    {isLoading ? t.au_logging : t.au_login}
                   </Button>
                 </form>
               </TabsContent>
@@ -120,7 +130,7 @@ const Login = () => {
               <TabsContent value="phone">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Numéro de téléphone</Label>
+                    <Label>{t.au_phone_number}</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input placeholder="+237 6XX XXX XXX" className="pl-10" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -128,12 +138,12 @@ const Login = () => {
                   </div>
                   {!otpSent ? (
                     <Button className="w-full bg-gradient-hero hover:opacity-90" onClick={handleSendOtp} disabled={!phone.trim() || isLoading}>
-                      {isLoading ? "Envoi..." : "Envoyer le code OTP"}
+                      {isLoading ? t.au_sending : t.au_send_otp}
                     </Button>
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <Label>Code OTP (6 chiffres)</Label>
+                        <Label>{t.au_otp_label}</Label>
                         <div className="flex justify-center">
                           <InputOTP maxLength={6} value={otp} onChange={setOtp}>
                             <InputOTPGroup>
@@ -144,10 +154,10 @@ const Login = () => {
                         </div>
                       </div>
                       <Button className="w-full bg-gradient-hero hover:opacity-90" onClick={handlePhoneLogin} disabled={isLoading || otp.length < 6}>
-                        {isLoading ? "Vérification..." : "Vérifier et se connecter"}
+                        {isLoading ? t.au_verifying : t.au_verify}
                       </Button>
                       <Button variant="ghost" size="sm" className="w-full" onClick={() => { setOtpSent(false); setOtp(""); }}>
-                        Renvoyer le code
+                        {t.au_resend}
                       </Button>
                     </>
                   )}
@@ -158,8 +168,8 @@ const Login = () => {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Pas encore de compte ?{" "}
-          <Link to="/inscription" className="text-primary font-medium hover:underline">S'inscrire</Link>
+          {t.au_no_account}{" "}
+          <Link to="/inscription" className="text-primary font-medium hover:underline">{t.au_signup}</Link>
         </p>
       </motion.div>
     </div>

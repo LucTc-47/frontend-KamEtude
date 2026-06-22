@@ -71,6 +71,7 @@ export interface Gig {
   badge: string;
   images: string[];
   active: boolean;
+  published?: boolean;
   gpsLocation?: { lat: number; lng: number };
 }
 

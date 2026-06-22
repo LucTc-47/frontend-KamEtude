@@ -1,134 +1,154 @@
-# Guide du Frontend - Project Compass
+# frontend-KamEtude
 
-## Introduction
+Frontend React/TypeScript de Kam'Etud, aligne sur l'UI la plus recente de `project-compass`, mais nettoye de toute logique backend Supabase.
 
-Ce projet est un frontend React/TypeScript utilisant Vite, Shadcn/UI, et Tailwind CSS. Il est actuellement connecté à Supabase pour la gestion des données, mais sera migré vers un backend Spring Boot avec microservices. Ce guide explique comment vérifier, modifier et étendre le frontend en local.
+L'application est actuellement un frontend UI-only : pages, composants, routing, styles, donnees mockees, hooks stubs et etat local. Elle est prete a etre reconnectee plus tard a un backend Spring Boot et aux flux Campay.
 
-## Prérequis
+## Etat actuel
 
-- **Node.js** (version 18+ recommandée)
-- **npm** ou **yarn**
-- **Git** pour cloner le repo
-- Un éditeur comme VS Code
-- (Optionnel) Un compte Supabase pour les tests actuels
+- UI React avec Vite, TypeScript, Tailwind CSS et shadcn/ui.
+- Routing gere par `react-router-dom` dans `src/App.tsx`.
+- Donnees metier servies par des hooks stubs dans `src/hooks/stubs/useUiData.stub.ts`.
+- Point d'entree data unique : `src/hooks/useUiData.ts`.
+- Authentification simulee dans `src/contexts/AuthContext.tsx`.
+- Role de test configurable via `MOCK_USER_ROLE`.
+- Aucun client Supabase, aucune migration SQL, aucun dossier `src/integrations/supabase`.
+- Bouton Google OAuth conserve en UI, mais sans appel OAuth reel.
+- Tests manuels documentes dans `TESTING.md`.
 
-## Installation et Lancement en Local
+## Prerequis
 
-1. **Cloner le repo** :
-   ```
-   git clone <url-du-repo>
-   cd project-compass
-   ```
+- Node.js 18 ou plus recent.
+- npm.
+- Git.
+- Un navigateur moderne.
 
-2. **Installer les dépendances** :
-   ```
-   npm install
-   ```
+## Installation
 
-3. **Configurer l'environnement** :
-   - Copiez `.env.example` vers `.env` (si disponible) et remplissez les variables (ex. : clés Supabase).
-   - Pour les tests locaux, vous pouvez utiliser des valeurs fictives ou configurer Supabase.
+```bash
+npm install
+```
 
-4. **Lancer le serveur de développement** :
-   ```
-   npm run dev
-   ```
-   - L'app sera accessible sur `http://localhost:5173`/ ce que npm run dev va vous fournir.
-   - Utilisez `npm run build` pour un build de production, puis `npm run preview` pour le tester.
+Sur Windows/PowerShell, si `npm` est bloque par la politique d'execution, utiliser :
 
-5. **Vérifier le build** :
-   ```
-   npm run build
-   ```
-   - Corrigez les erreurs TypeScript/ESLint si elles apparaissent.
+```bash
+npm.cmd install
+```
 
-## Vérification du Frontend en Local
+## Lancement local
 
-### 1. **Vue d'ensemble : Lancer l'app et naviguer**
-   - Démarrez avec `npm run dev`.
-   - Ouvrez `http://localhost:5173`ou(ce que npm run dev va vous fournir) dans un navigateur.
-   - Testez la navigation : Cliquez sur les liens du menu (accueil, services, etc.).
-   - Vérifiez la responsivité : Redimensionnez la fenêtre ou utilisez les DevTools pour simuler mobile.
+```bash
+npm run dev
+```
 
-### 2. **Vérifier chaque page**
-   - **Pages publiques** (sans connexion) :
-     - `/` (Accueil) : Vérifiez le hero, sections, et appels à l'action.
-     - `/services` : Liste des services, cartes, et interactions.
-     - `/comment-ca-marche` : Contenu explicatif, étapes.
-     - `/connexion` et `/inscription` : Formulaires, validation.
-     - `/inscription/etudiant` et `/inscription/client` : Champs spécifiques.
-     - URLs invalides : Doit afficher la page 404.
+URL Vite par defaut :
 
-   - **Pages privées** (nécessitent connexion) :
-     - Connectez-vous via `/connexion` (utilisez un compte test ou créez-en un).
-     - `/profil/:id` : Profil utilisateur, données dynamiques.
-     - `/commander/:gigId` : Formulaire de commande, intégration Supabase.
-     - `/mes-commandes`, `/mes-missions`, `/mes-gigs` : Listes et gestion.
-     - `/mes-gigs/creer` : Formulaire de création.
-     - `/admin` et `/moderateur` : Dashboards (droits requis).
+```text
+http://localhost:5173
+```
 
-   - **Pour chaque page** :
-     - Vérifiez le chargement : Pas d'erreurs console (F12 > Console).
-     - Interactions : Clics, formulaires, soumissions.
-     - Données : Vérifiez que les données Supabase se chargent (ou simulez si migré).
-     - Accessibilité : Navigation clavier, contrastes.
+## Scripts disponibles
 
-### 3. **Vérifier les composants et fonctionnalités**
-   - **UI Components** (`src/components/ui/`) : Testez les boutons, modales, formulaires (ex. : `Button`, `Dialog`).
-   - **Layouts** (`src/components/layout/`) : Navbar, Footer – vérifiez la cohérence.
-   - **Pages spécifiques** (`src/pages/`) : Intégrez avec les routes dans `App.tsx`.
-   - **Hooks et Contextes** (`src/hooks/`, `src/contexts/`) : Auth, Theme, Language – testez les changements d'état.
-   - **Intégrations** : Supabase (`src/integrations/supabase/`) – vérifiez les requêtes API.
-   - **Thèmes et Langues** : Basculez via les contextes.
+```bash
+npm run dev          # Serveur Vite
+npm run build        # Build production
+npm run build:dev    # Build mode development
+npm run preview      # Preview du build
+npm run lint         # ESLint
+npm run test         # Vitest en mode run
+npm run test:watch   # Vitest en mode watch
+npm run test:pages   # Ouvre les routes principales pour test manuel
+```
 
-### 4. **Tests automatisés**
-   - **Unitaires** : `npm run test` (Vitest) – Vérifiez les composants isolés.
-   - **E2E** : `npx playwright test` (après `npm run dev` en parallèle) – Simulez un utilisateur.
-   - Ajoutez des tests pour les nouvelles fonctionnalités.
+Le script `npm run test:pages` utilise `scripts/test-pages.mjs`. Il demarre le serveur Vite si necessaire, puis ouvre les pages principales dans le navigateur avec des IDs mockes.
 
-## Modifier et Ajouter au Frontend
+## Structure utile
 
-### Structure du Projet
-- `src/` : Code source.
-  - `components/` : Composants réutilisables (UI, layouts, spécifiques).
-  - `pages/` : Pages React (une par route).
-  - `contexts/` : Gestion d'état global (Auth, Theme, etc.).
-  - `hooks/` : Hooks personnalisés (ex. : `useSupabaseData`).
-  - `integrations/` : Connexions externes (Supabase).
-  - `lib/` : Utilitaires (styles, helpers).
-  - `types/` : Définitions TypeScript.
-- `public/` : Assets statiques.
-- Configs : `vite.config.ts`, `tailwind.config.ts`, etc.
+```text
+src/
+  App.tsx                     # Routes principales
+  components/                 # Composants UI, layout, home, auth
+  contexts/                   # Auth, langue, theme, notifications
+  hooks/
+    useUiData.ts              # Re-export public des hooks data UI
+    stubs/useUiData.stub.ts   # Donnees mockees et TODO backend
+  pages/                      # Pages routees
+  types/                      # Types TypeScript UI/metier
+  lib/                        # Utilitaires
+public/
+  kam-etud-hero.mp4           # Video hero
+scripts/
+  test-pages.mjs              # Lanceur de pages pour tests manuels
+```
 
-### Bonnes Pratiques pour les Modifications
-1. **Utilisez TypeScript** : Tout code doit être typé pour éviter les erreurs.
-2. **Composants Shadcn/UI** : Pour l'UI, utilisez les composants existants ou ajoutez-en via `npx shadcn@latest add <component>`.
-3. **Styles** : Tailwind CSS pour les classes. Utilisez `class-variance-authority` pour les variantes.
-4. **État** : Préférez React Query pour les données API, Context pour l'état global.
-5. **Linting** : `npm run lint` avant commit.
-6. **Commits** : Utilisez des messages descriptifs et testez avant push.
+## Authentification stub
 
-### Ajouter une Nouvelle Page/Fonctionnalité
-1. **Créer la page** : Ajoutez un fichier dans `src/pages/` (ex. : `NewPage.tsx`).
-2. **Ajouter la route** : Dans `App.tsx`, importez et ajoutez `<Route path="/nouvelle-page" element={<NewPage />} />`.
-3. **Composants** : Créez des composants dans `src/components/` si réutilisables.
-4. **Données** : Utilisez des hooks pour Supabase (actuellement) ou préparez pour Spring Boot.
-5. **Tests** : Ajoutez des tests unitaires et E2E.
-6. **Migration Backend** : Pour Spring Boot, remplacez les appels Supabase par des appels API REST (ex. : `fetch('/api/...')`). Préparez des interfaces pour les microservices.
+Le fichier `src/contexts/AuthContext.tsx` garde un etat local et persiste une session mockee dans `localStorage` sous la cle `kametud_stub_auth`.
 
-### Migration vers Spring Boot
-- Actuellement : Données via Supabase (client dans `src/integrations/supabase/`).
-- Futur : Remplacez par des appels vers votre backend Spring Boot (ex. : endpoints REST pour auth, gigs, etc.).
-- Étapes :
-  1. Définissez les APIs dans Spring Boot.
-  2. Mettez à jour les hooks (ex. : `useSupabaseData.ts` vers `useApiData.ts`).
-  3. Testez les intégrations avec des mocks ou un serveur local Spring Boot.
-  4. Mettez à jour `.env` pour les URLs du backend.
+Pour tester les pages par role, modifier :
 
-## Dépannage
-- **Erreurs build** : `npm run lint` et corrigez TypeScript.
-- **Problèmes Supabase** : Vérifiez `.env` et les clés API.
-- **Tests échouent** : Lancez `npm run dev` en parallèle pour E2E.
-- **Questions** : Consultez la doc React/Vite ou demandez dans les issues du repo.
+```ts
+export const MOCK_USER_ROLE = 'client';
+```
 
-Ce guide évoluera avec la migration backend. Bonne contribution !
+Roles supportes :
+
+- `client`
+- `student`
+- `moderator`
+- `admin`
+
+Apres changement de role, se deconnecter ou supprimer la cle `kametud_stub_auth`, puis se reconnecter via `/connexion`.
+
+## Pages principales
+
+Les routes declarees sont :
+
+- `/`
+- `/services`
+- `/comment-ca-marche`
+- `/connexion`
+- `/inscription`
+- `/inscription/etudiant`
+- `/inscription/client`
+- `/profil/:id`
+- `/commander/:gigId`
+- `/mes-commandes`
+- `/mes-missions`
+- `/mes-gigs`
+- `/mes-gigs/creer`
+- `/demandes`
+- `/demandes/:id`
+- `/mes-demandes`
+- `/mes-propositions`
+- `/admin`
+- `/moderateur`
+- `/confidentialite`
+- `/cgu`
+- `*` pour la page 404
+
+Voir `TESTING.md` pour le detail de verification page par page.
+
+## Donnees mockees et reconnexion backend
+
+Toutes les operations data passent par `src/hooks/useUiData.ts`, qui re-exporte actuellement les stubs de `src/hooks/stubs/useUiData.stub.ts`.
+
+Chaque hook stub contient un commentaire `TODO(backend)` indiquant le futur endpoint ou le flux metier Spring Boot a reconnecter : gigs, commandes, demandes, propositions, KYC, chat, litiges, categories, villes, fichiers, paiements et payouts.
+
+Pour reconnecter le backend, remplacer progressivement l'implementation des hooks sans changer les composants consommateurs.
+
+## Verification rapide
+
+```bash
+npm run build
+npm run test
+npm run test:pages
+```
+
+Le build peut afficher des avertissements Vite/Browserslist ou de taille de chunk. Ces avertissements ne bloquent pas l'execution, mais le code splitting devra etre traite plus tard si le bundle continue de grossir.
+
+## Documentation
+
+- `GUIDE_FRONTEND.md` : guide technique pour modifier et etendre le frontend.
+- `TESTING.md` : guide de test manuel complet.
+- `plan.md` : etat d'avancement et prochaines etapes de reconnexion backend.

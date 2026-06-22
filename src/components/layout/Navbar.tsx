@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +24,7 @@ const Navbar = () => {
   const navLinks = [
     { href: "/", label: t.home },
     { href: "/services", label: t.services },
+    { href: "/demandes", label: t.requests },
     { href: "/comment-ca-marche", label: t.howItWorks },
   ];
 
@@ -33,9 +35,11 @@ const Navbar = () => {
     switch (user.role) {
       case 'client': return [
         { label: t.myOrders, href: "/mes-commandes", icon: ShoppingBag },
+        { label: t.myRequests, href: "/mes-demandes", icon: Briefcase },
       ];
       case 'student': return [
         { label: t.myMissions, href: "/mes-missions", icon: Briefcase },
+        { label: "Mes propositions", href: "/mes-propositions", icon: Coins },
         { label: t.myGigs, href: "/mes-gigs", icon: Settings },
         { label: t.myProfile, href: `/profil/${user.id}`, icon: User },
       ];
@@ -84,6 +88,8 @@ const Navbar = () => {
             {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </Button>
 
+          {isAuthenticated && <NotificationBell />}
+
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -128,6 +134,7 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="w-8 h-8" onClick={toggleTheme}>
             {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </Button>
+          {isAuthenticated && <NotificationBell />}
           <button className="p-2" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>

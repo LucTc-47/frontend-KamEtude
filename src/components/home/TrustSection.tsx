@@ -1,36 +1,37 @@
 import { motion } from "framer-motion";
 import { Shield, Smartphone, Award, Clock } from "lucide-react";
-
-const features = [
-  {
-    icon: Shield,
-    title: "Identité vérifiée",
-    description: "Chaque étudiant est vérifié avec sa carte d'étudiant et sa CNI. Badge de confiance garanti.",
-  },
-  {
-    icon: Smartphone,
-    title: "Paiement Mobile Money",
-    description: "Payez via MTN MoMo ou Orange Money. Fonds sécurisés par séquestre jusqu'à validation.",
-  },
-  {
-    icon: Award,
-    title: "CV numérique",
-    description: "Chaque mission réalisée enrichit le profil de l'étudiant. Générez un CV PDF professionnel.",
-  },
-  {
-    icon: Clock,
-    title: "Matching intelligent",
-    description: "Notre algorithme trouve le prestataire idéal selon vos besoins, la proximité et les notes.",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const TrustSection = () => {
+  const { t } = useLanguage();
+  const features = [
+    {
+      icon: Shield,
+      title: t.trust_f1_t,
+      description: t.trust_f1_d,
+    },
+    {
+      icon: Smartphone,
+      title: t.trust_f2_t,
+      description: t.trust_f2_d,
+    },
+    {
+      icon: Award,
+      title: t.trust_f3_t,
+      description: t.trust_f3_d,
+    },
+    {
+      icon: Clock,
+      title: t.trust_f4_t,
+      description: t.trust_f4_d,
+    },
+  ];
   return (
     <section className="py-20 md:py-28">
       <div className="container mx-auto px-4">
         <div className="text-center mb-14">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-            Pourquoi choisir <span className="text-gradient-primary">Kam'Etud</span> ?
+            {t.trust_title1} <span className="text-gradient-primary">{t.trust_title2}</span> ?
           </h2>
         </div>
 

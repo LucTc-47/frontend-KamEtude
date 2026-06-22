@@ -1,50 +1,129 @@
+# Plan d'avancement Kam'Etud frontend
 
-## Plan d'implémentation — Kam'Etud (frontend avec données simulées)
+Ce fichier resume l'etat courant du frontend et les prochaines etapes. Il remplace l'ancien plan centre sur la creation initiale de pages : la majorite des routes UI existent deja.
 
-### Phase 1 : Modèles de données & État global
-- Créer `src/types/index.ts` avec tous les types (User, Gig, Order, Review, Dispute, etc.)
-- Créer `src/contexts/AuthContext.tsx` pour gérer l'authentification simulée (localStorage)
-- Créer `src/data/mockData.ts` avec des données réalistes
+## Objectif actuel
 
-### Phase 2 : Flux Client
-1. **Recherche avancée** — Filtres par catégorie, ville, note sur `/services`
-2. **Profil étudiant public** — Portfolio, gigs avec 3 paliers (basique/standard/premium)
-3. **Commande** — Page `/commander/:gigId` : description mission, budget, paiement Mobile Money simulé (escrow)
-4. **Suivi de mission** — Page `/mes-commandes` : statut, chat intégré, soumission livrable
-5. **Validation & Révisions** — Accepter livrable ou demander révision (max 2)
-6. **Notation** — Système 1-5 étoiles après mission
+Maintenir `frontend-KamEtude` comme frontend React UI-only, sans Supabase, pret a etre reconnecte a un backend Spring Boot.
 
-### Phase 3 : Flux Étudiant
-1. **Inscription 3 étapes** (déjà fait) + upload CNI/carte étudiante
-2. **Création de gigs** — Page `/mes-gigs/creer` : titre, 3 paliers prix, délai
-3. **Portfolio** — Section travaux, photos, liens projets
-4. **Localisation GPS & disponibilités**
-5. **Gestion des demandes** — Accepter/refuser missions
-6. **Soumission livrable** — Upload fichiers
-7. **CV PDF** — Génération avec missions et notes
+## Etat realise
 
-### Phase 4 : Flux Admin
-1. **Dashboard enrichi** — Stats détaillées (utilisateurs actifs, missions, revenus)
-2. **Vérification identité** — Validation CNI + carte, attribution badge
-3. **Suspension/Bannissement** de comptes
-4. **Modération gigs & avis** signalés
-5. **Remboursements manuels**
-6. **Export rapports** (Excel/PDF)
-7. **Gestion catégories & villes**
+- UI la plus recente migree depuis `project-compass`.
+- Routes principales declarees dans `src/App.tsx`.
+- Pages publiques, client, etudiant, admin et moderateur presentes.
+- Dossier racine `supabase/` supprime du frontend.
+- Dossiers `src/integrations/supabase/` et `src/integrations/lovable/` supprimes.
+- Dependances `@supabase/supabase-js` et `@lovable.dev/cloud-auth-js` retirees.
+- Couche data remplacee par `src/hooks/useUiData.ts` et `src/hooks/stubs/useUiData.stub.ts`.
+- Auth locale stub dans `src/contexts/AuthContext.tsx`.
+- Role de test centralise via `MOCK_USER_ROLE`.
+- Google OAuth conserve en composant UI stub.
+- Assets visuels presents : `public/kam-etud-hero.mp4`, `src/assets/hero-bg.jpg`.
+- Tests manuels documentes dans `TESTING.md`.
+- Script `npm run test:pages` ajoute.
 
-### Phase 5 : Flux Modérateur
-1. **Page `/moderateur`** — Liste des missions contestées
-2. **Vue litige** — Versions client + étudiant, chat, livrables
-3. **Arbitrage** — Valider livrable OU ordonner remboursement
-4. **Déblocage/remboursement forcé**
-5. **Signalement à l'admin**
+## Routes couvertes
 
-### Routes à créer
-- `/commander/:gigId` — Passer commande
-- `/mes-commandes` — Suivi client
-- `/mes-missions` — Suivi étudiant
-- `/mes-gigs` — Gestion gigs étudiant
-- `/mes-gigs/creer` — Créer un gig
-- `/moderateur` — Dashboard modérateur
-- `/admin/categories` — Gestion catégories
-- `/admin/rapports` — Export rapports
+- `/`
+- `/services`
+- `/comment-ca-marche`
+- `/connexion`
+- `/inscription`
+- `/inscription/etudiant`
+- `/inscription/client`
+- `/profil/:id`
+- `/commander/:gigId`
+- `/mes-commandes`
+- `/mes-missions`
+- `/mes-gigs`
+- `/mes-gigs/creer`
+- `/demandes`
+- `/demandes/:id`
+- `/mes-demandes`
+- `/mes-propositions`
+- `/admin`
+- `/moderateur`
+- `/confidentialite`
+- `/cgu`
+- `*`
+
+## Priorite 1 : Contrats Spring Boot
+
+Definir les contrats API avant de remplacer les stubs :
+
+- Auth : login, register, logout, refresh/session, roles.
+- Profils : profil courant, profils publics, profils admin.
+- Gigs : liste, detail, creation, publication, activation, suppression.
+- Categories et villes.
+- Demandes clients et propositions etudiantes.
+- Commandes : creation, statuts, livrables, revisions, validation.
+- Paiement Campay : initiation, statut, webhook, payout.
+- Chat : messages par commande.
+- Notifications.
+- KYC/verifications.
+- Litiges et moderation.
+- Rapports admin.
+
+## Priorite 2 : Client API frontend
+
+Creer une couche API dediee, sans appels directs depuis les pages :
+
+```text
+src/lib/api/
+  client.ts
+  auth.ts
+  gigs.ts
+  orders.ts
+  requests.ts
+  admin.ts
+```
+
+Les hooks de `src/hooks/useUiData.ts` pourront ensuite utiliser cette couche API.
+
+## Priorite 3 : Remplacement progressif des stubs
+
+Ordre conseille :
+
+1. `AuthContext.tsx` : remplacer la session locale par JWT/session Spring Boot.
+2. Profils et role utilisateur courant.
+3. Catalogue services : gigs, categories, villes.
+4. Demandes/propositions.
+5. Commandes et missions.
+6. Paiement Campay et payouts.
+7. Chat et notifications temps reel.
+8. Admin et moderation.
+
+Pendant cette phase, garder les signatures des hooks aussi stables que possible pour eviter de reecrire les pages.
+
+## Priorite 4 : Qualite et tests
+
+- Completer les tests unitaires Vitest autour des hooks et composants critiques.
+- Ajouter des tests de rendu pour les pages protegees par role.
+- Ajouter plus tard des tests E2E Playwright pour les parcours :
+  - inscription client ;
+  - inscription etudiant ;
+  - creation de gig ;
+  - commande client ;
+  - demande client et proposition etudiante ;
+  - moderation de litige ;
+  - dashboard admin.
+- Continuer a maintenir `TESTING.md` a chaque nouvelle route.
+
+## Points d'attention
+
+- Ne pas reintroduire `supabase`, `@supabase` ou `lovable.dev` dans `src/`.
+- Ne pas stocker de secret Campay dans le frontend.
+- Ne pas appeler Campay directement depuis le navigateur.
+- Ne pas importer une couche API directement dans les composants si un hook peut encapsuler l'usage.
+- Verifier le role de test apres chaque changement de `MOCK_USER_ROLE`.
+
+## Commandes de verification
+
+```bash
+npm run build
+npm run test
+npm run test:pages
+rg -n "supabase|@supabase|lovable.dev" src
+```
+
+Le build peut afficher des avertissements de taille de chunk ou Browserslist ancien. Ces avertissements sont connus et ne bloquent pas l'etat UI-only actuel.

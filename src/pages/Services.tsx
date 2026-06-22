@@ -12,7 +12,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import ServiceMap from "@/components/services/ServiceMap";
-import { useGigs, useCities, useCategories } from "@/hooks/useSupabaseData";
+import { useGigs, useCities, useCategories } from "@/hooks/useUiData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 const categoryIcons: Record<string, any> = {
@@ -29,6 +30,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 
 const Services = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -53,11 +55,11 @@ const Services = () => {
   const [geoLoading, setGeoLoading] = useState(false);
 
   const handleGeolocate = () => {
-    if (!navigator.geolocation) { toast({ title: "Géolocalisation non disponible", variant: "destructive" }); return; }
+    if (!navigator.geolocation) { toast({ title: t.sv_geo_unavail, variant: "destructive" }); return; }
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoLoading(false); toast({ title: "Position trouvée !" }); },
-      () => { setGeoLoading(false); toast({ title: "Impossible d'obtenir votre position", variant: "destructive" }); },
+      (pos) => { setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoLoading(false); toast({ title: t.sv_geo_ok }); },
+      () => { setGeoLoading(false); toast({ title: t.sv_geo_err, variant: "destructive" }); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
@@ -93,33 +95,33 @@ const Services = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-              Explorer les <span className="text-gradient-primary">services</span>
+              {t.sv_title1} <span className="text-gradient-primary">{t.sv_title2}</span>
             </h1>
-            <p className="mt-3 text-muted-foreground">Trouvez l'étudiant idéal parmi nos prestataires vérifiés.</p>
+            <p className="mt-3 text-muted-foreground">{t.sv_subtitle}</p>
           </div>
 
           <div className="max-w-4xl mx-auto mb-8 space-y-4">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input placeholder="Rechercher un service ou un prestataire..." className="pl-12 h-12 text-base" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <Input placeholder={t.sv_search} className="pl-12 h-12 text-base" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             <div className="flex flex-wrap gap-3 items-center">
               <Select value={selectedCity} onValueChange={setSelectedCity}>
-                <SelectTrigger className="w-[160px]"><MapPin className="w-4 h-4 mr-1 text-muted-foreground" /><SelectValue placeholder="Ville" /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Toutes</SelectItem>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <SelectTrigger className="w-[160px]"><MapPin className="w-4 h-4 mr-1 text-muted-foreground" /><SelectValue placeholder={t.sv_city} /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{t.sv_all}</SelectItem>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={minRating} onValueChange={setMinRating}>
-                <SelectTrigger className="w-[160px]"><Star className="w-4 h-4 mr-1 text-muted-foreground" /><SelectValue placeholder="Note min." /></SelectTrigger>
-                <SelectContent><SelectItem value="all">Toutes</SelectItem><SelectItem value="4.5">4.5+</SelectItem><SelectItem value="4.0">4.0+</SelectItem><SelectItem value="3.5">3.5+</SelectItem></SelectContent>
+                <SelectTrigger className="w-[160px]"><Star className="w-4 h-4 mr-1 text-muted-foreground" /><SelectValue placeholder={t.sv_rating} /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{t.sv_all}</SelectItem><SelectItem value="4.5">4.5+</SelectItem><SelectItem value="4.0">4.0+</SelectItem><SelectItem value="3.5">3.5+</SelectItem></SelectContent>
               </Select>
               <Button variant={userLocation ? "default" : "outline"} size="sm" onClick={handleGeolocate} disabled={geoLoading} className={userLocation ? "bg-gradient-hero" : ""}>
                 {geoLoading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Navigation className="w-4 h-4 mr-1" />}
-                {userLocation ? "Localisé" : "Près de moi"}
+                {userLocation ? t.sv_geo_loc : t.sv_geo_btn}
               </Button>
               {userLocation && (
                 <Select value={maxDistance} onValueChange={setMaxDistance}>
-                  <SelectTrigger className="w-[150px]"><SelectValue placeholder="Distance" /></SelectTrigger>
-                  <SelectContent><SelectItem value="all">Toute</SelectItem><SelectItem value="5">≤ 5km</SelectItem><SelectItem value="10">≤ 10km</SelectItem><SelectItem value="25">≤ 25km</SelectItem><SelectItem value="50">≤ 50km</SelectItem></SelectContent>
+                  <SelectTrigger className="w-[150px]"><SelectValue placeholder={t.sv_distance} /></SelectTrigger>
+                  <SelectContent><SelectItem value="all">{t.sv_all}</SelectItem><SelectItem value="5">≤ 5km</SelectItem><SelectItem value="10">≤ 10km</SelectItem><SelectItem value="25">≤ 25km</SelectItem><SelectItem value="50">≤ 50km</SelectItem></SelectContent>
                 </Select>
               )}
               <div className="ml-auto flex gap-1 border border-border rounded-lg p-0.5">
@@ -127,14 +129,14 @@ const Services = () => {
                 <Button size="sm" variant={viewMode === "map" ? "default" : "ghost"} className={viewMode === "map" ? "bg-gradient-hero" : ""} onClick={() => setViewMode("map")}><Map className="w-4 h-4" /></Button>
               </div>
               {(selectedCity || minRating || selectedCategory || searchQuery || maxDistance) && (
-                <Button variant="ghost" size="sm" onClick={() => { setSelectedCity(""); setMinRating(""); setSelectedCategory(""); setSearchQuery(""); setMaxDistance(""); }}>Réinitialiser</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setSelectedCity(""); setMinRating(""); setSelectedCategory(""); setSearchQuery(""); setMaxDistance(""); }}>{t.sv_reset}</Button>
               )}
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mb-10">
             <Button size="sm" variant={selectedCategory === "" ? "default" : "outline"} className={selectedCategory === "" ? "bg-gradient-hero" : ""} onClick={() => setSelectedCategory("")}>
-              <Filter className="w-4 h-4 mr-1" /> Tous
+              <Filter className="w-4 h-4 mr-1" /> {t.sv_all}
             </Button>
             {allCategories.map((cat) => {
               const Icon = categoryIcons[cat] || Filter;
@@ -149,7 +151,7 @@ const Services = () => {
           {viewMode === "map" && (
             <div className="mb-8">
               <ServiceMap gigs={filtered} userLocation={userLocation} onGigClick={handleMapGigClick} />
-              <p className="text-xs text-muted-foreground text-center mt-2">{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">{filtered.length} {filtered.length > 1 ? t.sv_results_plural : t.sv_results}</p>
             </div>
           )}
 
@@ -173,7 +175,7 @@ const Services = () => {
                         <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
                           <span className="font-medium text-foreground">{gig.studentName}</span>
                           <span className="flex items-center gap-1"><Star className="w-4 h-4 text-secondary fill-secondary" />{gig.rating}</span>
-                          <span>({gig.reviewCount} avis)</span>
+                          <span>({gig.reviewCount} {t.sv_reviews})</span>
                         </div>
                         <div className="mt-4 flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -181,7 +183,7 @@ const Services = () => {
                             {dist !== null && <Badge variant="outline" className="text-xs"><Navigation className="w-3 h-3 mr-0.5" />{dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`}</Badge>}
                           </div>
                           <div className="text-right">
-                            <span className="text-xs text-muted-foreground">À partir de</span>
+                            <span className="text-xs text-muted-foreground">{t.sv_from}</span>
                             <p className="font-display font-bold text-primary text-lg">{gig.tiers.basique.price.toLocaleString()} FCFA</p>
                           </div>
                         </div>
@@ -190,7 +192,7 @@ const Services = () => {
                   );
                 })}
               </div>
-              {!gigsLoading && filtered.length === 0 && <div className="text-center py-16 text-muted-foreground"><p className="text-lg">Aucun service trouvé.</p></div>}
+              {!gigsLoading && filtered.length === 0 && <div className="text-center py-16 text-muted-foreground"><p className="text-lg">{t.sv_none}</p></div>}
             </>
           )}
         </div>

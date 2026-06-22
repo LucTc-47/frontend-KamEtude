@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCities } from "@/hooks/useSupabaseData";
+import { useCities } from "@/hooks/useUiData";
+import { GoogleButton } from "@/components/auth/GoogleButton";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const FALLBACK_CITIES = ["Yaoundé", "Douala", "Bafoussam", "Bamenda", "Garoua", "Maroua", "Bertoua", "Ebolowa", "Ngaoundéré", "Buea"];
 
@@ -23,6 +25,7 @@ const RegisterClient = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { data: dbCities } = useCities();
+  const { t } = useLanguage();
   const cities = dbCities && dbCities.length > 0 ? dbCities.map((c) => c.name) : FALLBACK_CITIES;
 
   const [form, setForm] = useState({
@@ -36,17 +39,17 @@ const RegisterClient = () => {
     if (form.password !== form.confirmPassword) return;
     setIsLoading(true);
     setError("");
-    const success = await register({
+    const { success } = await register({
       email: form.email, password: form.password,
       firstName: form.firstName, lastName: form.lastName,
       phone: form.phone, city: form.city, role: 'client',
     });
     setIsLoading(false);
     if (success) {
-      toast({ title: "Inscription réussie !", description: "Vérifiez votre email pour activer votre compte." });
+      toast({ title: t.au_signup_ok, description: t.au_signup_ok_d });
       navigate("/connexion");
     } else {
-      setError("Erreur lors de l'inscription. Vérifiez vos informations.");
+      setError(t.au_err_register);
     }
   };
 
@@ -62,60 +65,67 @@ const RegisterClient = () => {
               Kam'<span className="text-gradient-primary">Etud</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-display font-bold text-foreground">Inscription Client</h1>
-          <p className="text-muted-foreground mt-1">Trouvez des étudiants talentueux pour vos projets</p>
+          <h1 className="text-2xl font-display font-bold text-foreground">{t.au_signup_client}</h1>
+          <p className="text-muted-foreground mt-1">{t.au_signup_client_sub}</p>
         </div>
 
         <Card className="shadow-elevated border-border/50">
           <CardContent className="pt-6">
+            <div className="space-y-3 mb-4">
+              <GoogleButton label={t.au_google_signup} />
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-card px-2 text-muted-foreground">{t.au_or_email}</span></div>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">{error}</p>}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Prénom</Label><Input placeholder="Marie" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} required /></div>
-                <div className="space-y-2"><Label>Nom</Label><Input placeholder="Fotso" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} required /></div>
+                <div className="space-y-2"><Label>{t.au_first_name}</Label><Input placeholder="Marie" value={form.firstName} onChange={(e) => update("firstName", e.target.value)} required /></div>
+                <div className="space-y-2"><Label>{t.au_last_name}</Label><Input placeholder="Fotso" value={form.lastName} onChange={(e) => update("lastName", e.target.value)} required /></div>
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>{t.au_email}</Label>
                 <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="marie@email.com" className="pl-10" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
               </div>
               <div className="space-y-2">
-                <Label>Téléphone</Label>
+                <Label>{t.au_phone}</Label>
                 <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="+237 6XX XXX XXX" className="pl-10" value={form.phone} onChange={(e) => update("phone", e.target.value)} required /></div>
               </div>
               <div className="space-y-2">
-                <Label>Ville</Label>
+                <Label>{t.au_city}</Label>
                 <Select value={form.city} onValueChange={(v) => update("city", v)}>
-                  <SelectTrigger><MapPin className="w-4 h-4 mr-2 text-muted-foreground" /><SelectValue placeholder="Votre ville" /></SelectTrigger>
+                  <SelectTrigger><MapPin className="w-4 h-4 mr-2 text-muted-foreground" /><SelectValue placeholder={t.au_city_yours} /></SelectTrigger>
                   <SelectContent>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Mot de passe</Label>
+                <Label>{t.au_password}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input type={showPassword ? "text" : "password"} placeholder="Min. 8 caractères" className="pl-10 pr-10" value={form.password} onChange={(e) => update("password", e.target.value)} required />
+                  <Input type={showPassword ? "text" : "password"} placeholder={t.au_pw_hint} className="pl-10 pr-10" value={form.password} onChange={(e) => update("password", e.target.value)} required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
-              <div className="space-y-2"><Label>Confirmer</Label><Input type="password" placeholder="••••••••" value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} required /></div>
+              <div className="space-y-2"><Label>{t.au_confirm}</Label><Input type="password" placeholder="••••••••" value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} required /></div>
               <div className="flex items-start gap-2">
                 <Checkbox id="terms" checked={acceptTerms} onCheckedChange={(v) => setAcceptTerms(v === true)} />
                 <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight">
-                  J'accepte les <Link to="/conditions" className="text-primary hover:underline">conditions</Link> et la <Link to="/confidentialite" className="text-primary hover:underline">politique de confidentialité</Link>
+                  {t.au_accept} <Link to="/conditions" className="text-primary hover:underline">{t.au_terms}</Link> {t.au_and} <Link to="/confidentialite" className="text-primary hover:underline">{t.au_privacy}</Link>
                 </label>
               </div>
               <Button type="submit" className="w-full bg-gradient-hero hover:opacity-90" disabled={isLoading || !acceptTerms}>
-                {isLoading ? "Création..." : "Créer mon compte"}
+                {isLoading ? t.au_creating : t.au_create_btn}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Déjà un compte ? <Link to="/connexion" className="text-primary font-medium hover:underline">Se connecter</Link>
-          {" · "}<Link to="/inscription/etudiant" className="text-primary font-medium hover:underline">Inscription étudiant</Link>
+          {t.au_have_account} <Link to="/connexion" className="text-primary font-medium hover:underline">{t.au_signin}</Link>
+          {" · "}<Link to="/inscription/etudiant" className="text-primary font-medium hover:underline">{t.au_or_student}</Link>
         </p>
       </motion.div>
     </div>

@@ -10,17 +10,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateGig, useCategories, useCities } from "@/hooks/useSupabaseData";
+import { useCreateGig, useCategories, useCities } from "@/hooks/useUiData";
+import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
+import { AlertTriangle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 const CreateGig = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const createGig = useCreateGig();
   const { data: dbCategories } = useCategories();
   const { data: dbCities } = useCities();
+  const { user } = useAuth();
   const categories = dbCategories || [];
   const cities = dbCities ? dbCities.map(c => c.name) : [];
+  const [publishNow, setPublishNow] = useState(false);
+  const isVerified = !!user?.verified;
 
   const [form, setForm] = useState({
     title: "", description: "", category: "", location: "",
@@ -42,25 +50,53 @@ const CreateGig = () => {
     setForm((prev) => { const f = prev[tier].features.filter((_, i) => i !== idx); return { ...prev, [tier]: { ...prev[tier], features: f.length ? f : [""] } }; });
   };
 
-  const buildTier = (tier: 'basique' | 'standard' | 'premium', label: string) => ({
-    name: label, price: parseInt(form[tier].price) || 0,
-    description: form[tier].description, deliveryDays: parseInt(form[tier].deliveryDays) || 1,
-    features: form[tier].features.filter(Boolean),
-  });
+  const buildTier = (tier: 'basique' | 'standard' | 'premium', label: string) => {
+    const price = parseInt(form[tier].price) || 0;
+    const days = parseInt(form[tier].deliveryDays) || 1;
+    return {
+      name: label,
+      price: price > 0 ? price : 0,
+      description: form[tier].description || label,
+      deliveryDays: days > 0 ? days : 1,
+      features: form[tier].features.filter(f => f.trim().length > 0),
+    };
+  };
 
   const handleSubmit = async () => {
+    if (!form.title.trim() || !form.category) {
+      toast({ title: t.c_error, description: t.c_err_required_fields, variant: "destructive" });
+      return;
+    }
+
+    const tiers = {
+      basique: buildTier('basique', 'Basique'),
+      standard: buildTier('standard', 'Standard'),
+      premium: buildTier('premium', 'Premium'),
+    };
+
+    if (tiers.basique.price <= 0 || tiers.standard.price <= 0 || tiers.premium.price <= 0) {
+      toast({ title: t.c_error, description: t.c_err_invalid_price, variant: "destructive" });
+      return;
+    }
+
     try {
       await createGig.mutateAsync({
         title: form.title, description: form.description,
         category: form.category, location: form.location,
-        tier_basique: buildTier('basique', 'Basique'),
-        tier_standard: buildTier('standard', 'Standard'),
-        tier_premium: buildTier('premium', 'Premium'),
+        tier_basique: tiers.basique,
+        tier_standard: tiers.standard,
+        tier_premium: tiers.premium,
+        published: publishNow && isVerified,
       });
-      toast({ title: "Gig publié !", description: "Votre service est maintenant visible." });
+      toast({
+        title: publishNow && isVerified ? t.cg_gig_published : t.cg_draft_saved,
+        description: publishNow && isVerified
+          ? t.cg_gig_published_d
+          : t.cg_draft_saved_d,
+      });
       navigate("/mes-gigs");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t.c_error, description: e.message, variant: "destructive" });
     }
   };
 
@@ -69,19 +105,19 @@ const CreateGig = () => {
       <CardHeader><CardTitle className="font-display text-base capitalize">{label}</CardTitle></CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1"><Label className="text-xs">Prix (FCFA)</Label><Input type="number" placeholder="0" value={form[tier].price} onChange={(e) => updateTier(tier, "price", e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Délai (jours)</Label><Input type="number" placeholder="1" value={form[tier].deliveryDays} onChange={(e) => updateTier(tier, "deliveryDays", e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t.cg_price}</Label><Input type="number" placeholder="0" value={form[tier].price} onChange={(e) => updateTier(tier, "price", e.target.value)} /></div>
+          <div className="space-y-1"><Label className="text-xs">{t.cg_delay}</Label><Input type="number" placeholder="1" value={form[tier].deliveryDays} onChange={(e) => updateTier(tier, "deliveryDays", e.target.value)} /></div>
         </div>
-        <div className="space-y-1"><Label className="text-xs">Description</Label><Input placeholder="Ex: Landing page" value={form[tier].description} onChange={(e) => updateTier(tier, "description", e.target.value)} /></div>
+        <div className="space-y-1"><Label className="text-xs">{t.cg_tier_desc}</Label><Input placeholder={t.cg_tier_desc_ph} value={form[tier].description} onChange={(e) => updateTier(tier, "description", e.target.value)} /></div>
         <div className="space-y-1">
-          <Label className="text-xs">Inclus</Label>
+          <Label className="text-xs">{t.cg_included}</Label>
           {form[tier].features.map((f, i) => (
             <div key={i} className="flex gap-1">
-              <Input placeholder="Ex: Design responsive" value={f} onChange={(e) => updateFeature(tier, i, e.target.value)} className="text-sm" />
+              <Input placeholder={t.cg_feature_ph} value={f} onChange={(e) => updateFeature(tier, i, e.target.value)} className="text-sm" />
               {form[tier].features.length > 1 && <Button size="icon" variant="ghost" className="shrink-0" onClick={() => removeFeature(tier, i)}><Trash2 className="w-3 h-3" /></Button>}
             </div>
           ))}
-          <Button size="sm" variant="ghost" onClick={() => addFeature(tier)} className="text-xs"><Plus className="w-3 h-3 mr-1" /> Ajouter</Button>
+          <Button size="sm" variant="ghost" onClick={() => addFeature(tier)} className="text-xs"><Plus className="w-3 h-3 mr-1" /> {t.cg_add}</Button>
         </div>
       </CardContent>
     </Card>
@@ -90,29 +126,48 @@ const CreateGig = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4"><ArrowLeft className="w-4 h-4 mr-1" /> Retour</Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4"><ArrowLeft className="w-4 h-4 mr-1" /> {t.c_back}</Button>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-display font-bold text-foreground mb-6">Publier un nouveau gig</h1>
+          <h1 className="text-2xl font-display font-bold text-foreground mb-6">{t.cg_title}</h1>
           <div className="space-y-6">
             <Card className="shadow-card border-border/50">
-              <CardHeader><CardTitle className="font-display text-lg">Informations générales</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-display text-lg">{t.cg_general}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2"><Label>Titre</Label><Input placeholder="Ex: Création de site web" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Description</Label><Textarea placeholder="Décrivez votre service..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="min-h-[100px]" /></div>
+                <div className="space-y-2"><Label>{t.cg_gig_title}</Label><Input placeholder={t.cg_gig_title_ph} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
+                <div className="space-y-2"><Label>{t.cg_gig_desc}</Label><Textarea placeholder={t.cg_gig_desc_ph} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="min-h-[100px]" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2"><Label>Catégorie</Label><Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{categories.filter((c: any) => c.active).map((c: any) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select></div>
-                  <div className="space-y-2"><Label>Ville</Label><Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label>{t.cg_category}</Label><Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}><SelectTrigger><SelectValue placeholder={t.cg_choose} /></SelectTrigger><SelectContent>{categories.filter((c: any) => c.active).map((c: any) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label>{t.city}</Label><Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}><SelectTrigger><SelectValue placeholder={t.cg_choose} /></SelectTrigger><SelectContent>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
                 </div>
               </CardContent>
             </Card>
-            <h2 className="font-display font-bold text-lg text-foreground">Tarification (3 paliers)</h2>
+            <h2 className="font-display font-bold text-lg text-foreground">{t.cg_pricing}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {renderTierForm("basique", "🟢 Basique")}
-              {renderTierForm("standard", "🟡 Standard")}
-              {renderTierForm("premium", "🔴 Premium")}
+              {renderTierForm("basique", `🟢 ${t.lvl_beginner}`)}
+              {renderTierForm("standard", `🟡 ${t.lvl_intermediate}`)}
+              {renderTierForm("premium", `🔴 ${t.lvl_expert}`)}
             </div>
+            <Card className="shadow-card border-border/50">
+              <CardContent className="p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium text-foreground">{t.cg_publish_now}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isVerified
+                      ? t.cg_pn_yes
+                      : t.cg_pn_no}
+                  </p>
+                </div>
+                <Switch checked={publishNow && isVerified} disabled={!isVerified} onCheckedChange={setPublishNow} />
+              </CardContent>
+            </Card>
+            {!isVerified && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/10 border border-secondary/30 text-sm">
+                <AlertTriangle className="w-4 h-4 text-secondary mt-0.5 shrink-0" />
+                <p className="text-foreground">{t.cg_warn} <strong>{t.mg_draft}</strong>{t.cg_warn_2}</p>
+              </div>
+            )}
             <Button className="w-full bg-gradient-hero hover:opacity-90 h-12" onClick={handleSubmit} disabled={createGig.isPending || !form.title || !form.category}>
-              {createGig.isPending ? "Publication..." : "Publier le gig"}
+              {createGig.isPending ? t.cg_saving : (publishNow && isVerified ? t.cg_publish_btn : t.cg_save_draft)}
             </Button>
           </div>
         </motion.div>

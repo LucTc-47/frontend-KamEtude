@@ -1,17 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, DollarSign, ShoppingBag, AlertTriangle, CheckCircle, XCircle,
   Eye, Search, TrendingUp, Shield, Clock, BarChart3,
   Ban, MapPin, Tag, Plus, Trash2, FileSpreadsheet, FileText, Loader2, LogOut,
+  ZoomIn, ZoomOut, Download, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+// Resolves a stored URL (public URL OR raw path) to a viewable URL.
+// For the private "identity-documents" bucket we generate a short-lived signed URL.
+function KycImage({ url, alt, onOpen }: { url: string; alt: string; onOpen?: (src: string) => void }) {
+  const { t } = useLanguage();
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // TODO(backend): reconnecter la generation d'URL signee KYC via Spring Boot (GET /files/identity-documents/{path}/signed-url).
+      if (!cancelled) setSrc(url);
+    })();
+    return () => { cancelled = true; };
+  }, [url]);
+  if (!src) return <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">{t.ad_loading_img}</div>;
+  return (
+    <button type="button" onClick={() => onOpen?.(src)} className="block w-full h-full">
+      <img src={src} alt={alt} className="w-full h-full object-cover cursor-zoom-in hover:opacity-90 transition" />
+    </button>
+  );
+}
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,7 +47,7 @@ import {
   useAllProfiles, useAllOrders, useVerificationRequests, useUpdateVerification,
   useCategories, useAllCities, useCreateCategory, useToggleCategory, useDeleteCategory,
   useCreateCity, useDeleteCity, useUpdateProfile, useReportedContent,
-} from "@/hooks/useSupabaseData";
+} from "@/hooks/useUiData";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -33,15 +55,44 @@ import autoTable from 'jspdf-autotable';
 type AdminTab = "dashboard" | "users" | "verifications" | "orders" | "moderation" | "categories" | "reports";
 
 const AdminDashboard = () => {
+  const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && (!user || user.role !== 'admin')) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
+
   const { toast } = useToast();
   const { t } = useLanguage();
-  const { logout } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [newCity, setNewCity] = useState("");
   const [selectedVerification, setSelectedVerification] = useState<any>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+
+  // Reset zoom whenever lightbox image changes
+  useEffect(() => { setZoom(1); }, [lightbox]);
+
+  const handleDownload = async () => {
+    if (!lightbox) return;
+    try {
+      const res = await fetch(lightbox);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+      a.download = `kametud-${Date.now()}.${ext}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast({ title: t.ad_download_err, description: e.message, variant: "destructive" });
+    }
+  };
 
   // ─── Real data hooks ───
   const { data: profiles = [], isLoading: profilesLoading } = useAllProfiles();
@@ -134,9 +185,9 @@ const AdminDashboard = () => {
           Ville: p.city || '',
           Vérifié: p.verified ? 'Oui' : 'Non',
           Banni: p.banned ? 'Oui' : 'Non',
-          Inscription: new Date(p.created_at).toLocaleDateString('fr-FR'),
+          Inscription: new Date(p.created_at).toLocaleDateString(t.locale),
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(usersData), 'Utilisateurs');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(usersData), t.users);
         // Orders sheet
         const ordersData = orders.map(o => ({
           Client: o.clientName,
@@ -144,39 +195,39 @@ const AdminDashboard = () => {
           Service: o.gigTitle,
           Montant: o.budget,
           Statut: o.status,
-          Date: new Date(o.createdAt).toLocaleDateString('fr-FR'),
+          Date: new Date(o.createdAt).toLocaleDateString(t.locale),
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ordersData), 'Commandes');
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ordersData), t.orders);
         XLSX.writeFile(wb, `KamEtud_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
         toast({ title: t.exportLaunched + " Excel", description: t.downloadSoon });
       } else {
         const doc = new jsPDF();
         doc.setFontSize(18);
-        doc.text("Kam'Etud — Rapport Admin", 14, 22);
+        doc.text(t.ad_report_title, 14, 22);
         doc.setFontSize(10);
-        doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 30);
+        doc.text(`${t.pf_cv_gen} ${new Date().toLocaleDateString(t.locale)}`, 14, 30);
 
         // Stats
         doc.setFontSize(14);
-        doc.text("Statistiques", 14, 42);
+        doc.text(t.c_stats, 14, 42);
         autoTable(doc, {
           startY: 46,
-          head: [['Métrique', 'Valeur']],
+          head: [[t.c_metric, t.c_value]],
           body: [
-            ['Utilisateurs', totalUsers.toString()],
-            ['Commandes', totalOrders.toString()],
-            ['Revenus', `${totalRevenue.toLocaleString()} FCFA`],
-            ['Litiges', disputedOrders.toString()],
+            [t.users, totalUsers.toString()],
+            [t.orders, totalOrders.toString()],
+            [t.revenue, `${totalRevenue.toLocaleString()} FCFA`],
+            [t.disputes, disputedOrders.toString()],
           ],
         });
 
         // Orders table
         const finalY = (doc as any).lastAutoTable?.finalY || 80;
         doc.setFontSize(14);
-        doc.text("Commandes", 14, finalY + 10);
+        doc.text(t.orders, 14, finalY + 10);
         autoTable(doc, {
           startY: finalY + 14,
-          head: [['Client', 'Étudiant', 'Service', 'Montant', 'Statut']],
+          head: [[t.client, t.student, t.service, t.amount, t.status]],
           body: orders.slice(0, 50).map(o => [o.clientName, o.studentName, o.gigTitle, `${o.budget} FCFA`, o.status]),
           styles: { fontSize: 8 },
         });
@@ -268,10 +319,23 @@ const AdminDashboard = () => {
                     </TableRow></TableHeader>
                     <TableBody>
                       {pendingVerifications.map((v) => (
+                        (() => {
+                          const sp = profiles.find(p => p.user_id === v.student_id);
+                          return (
                         <TableRow key={v.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Avatar className="w-8 h-8"><AvatarFallback className="bg-muted text-xs">{v.student_name?.split(" ").map((n: string) => n[0]).join("") || "?"}</AvatarFallback></Avatar>
+                              <button
+                                type="button"
+                                onClick={() => sp?.avatar_url && setLightbox(sp.avatar_url)}
+                                className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                                title={sp?.avatar_url ? t.ad_preview : ""}
+                              >
+                                <Avatar className="w-8 h-8">
+                                  {sp?.avatar_url && <AvatarImage src={sp.avatar_url} alt={v.student_name} />}
+                                  <AvatarFallback className="bg-muted text-xs">{v.student_name?.split(" ").map((n: string) => n[0]).join("") || "?"}</AvatarFallback>
+                                </Avatar>
+                              </button>
                               <div><p className="font-medium text-foreground text-sm">{v.student_name}</p><p className="text-xs text-muted-foreground">{v.email}</p></div>
                             </div>
                           </TableCell>
@@ -286,6 +350,8 @@ const AdminDashboard = () => {
                             </div>
                           </TableCell>
                         </TableRow>
+                          );
+                        })()
                       ))}
                     </TableBody>
                   </Table>
@@ -295,7 +361,7 @@ const AdminDashboard = () => {
             {/* All verifications history */}
             {verifications.filter(v => v.status !== 'pending').length > 0 && (
               <Card className="shadow-card border-border/50 mt-4">
-                <CardHeader><CardTitle className="font-display text-lg">Historique</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="font-display text-lg">{t.c_history}</CardTitle></CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader><TableRow>
@@ -306,7 +372,7 @@ const AdminDashboard = () => {
                         <TableRow key={v.id}>
                           <TableCell className="text-sm">{v.student_name}</TableCell>
                           <TableCell>{statusBadge(v.status)}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{new Date(v.submitted_at).toLocaleDateString('fr-FR')}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{new Date(v.submitted_at).toLocaleDateString(t.locale)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -321,18 +387,36 @@ const AdminDashboard = () => {
                 </DialogHeader>
                 {selectedVerification && (
                   <div className="space-y-4">
+                    {(() => {
+                      const sp = profiles.find(p => p.user_id === selectedVerification.student_id);
+                      if (!sp?.avatar_url) return null;
+                      return (
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={() => setLightbox(sp.avatar_url!)} className="shrink-0">
+                            <Avatar className="w-16 h-16 cursor-zoom-in ring-2 ring-primary/20">
+                              <AvatarImage src={sp.avatar_url} alt={selectedVerification.student_name} />
+                              <AvatarFallback>{selectedVerification.student_name?.[0]}</AvatarFallback>
+                            </Avatar>
+                          </button>
+                          <div>
+                            <p className="text-sm font-medium">{t.pf_photo}</p>
+                            <p className="text-xs text-muted-foreground">{t.ad_preview}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div><span className="text-muted-foreground">{t.email} :</span> <span className="font-medium">{selectedVerification.email}</span></div>
                       <div><span className="text-muted-foreground">{t.university} :</span> <span className="font-medium">{selectedVerification.university || '-'}</span></div>
                       <div><span className="text-muted-foreground">{t.documentType} :</span> <Badge variant="outline">{selectedVerification.id_type || 'CNI'}</Badge></div>
-                      <div><span className="text-muted-foreground">{t.submitted} :</span> <span className="font-medium">{new Date(selectedVerification.submitted_at).toLocaleDateString('fr-FR')}</span></div>
+                      <div><span className="text-muted-foreground">{t.submitted} :</span> <span className="font-medium">{new Date(selectedVerification.submitted_at).toLocaleDateString(t.locale)}</span></div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {selectedVerification.id_file_url && (
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">{t.idDocument}</Label>
                           <div className="border border-border rounded-lg overflow-hidden bg-muted aspect-[4/3]">
-                            <img src={selectedVerification.id_file_url} alt={t.idDocument} className="w-full h-full object-cover" />
+                            <KycImage url={selectedVerification.id_file_url} alt={t.idDocument} onOpen={setLightbox} />
                           </div>
                         </div>
                       )}
@@ -340,7 +424,7 @@ const AdminDashboard = () => {
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">{t.studentCard}</Label>
                           <div className="border border-border rounded-lg overflow-hidden bg-muted aspect-[4/3]">
-                            <img src={selectedVerification.student_card_url} alt={t.studentCard} className="w-full h-full object-cover" />
+                            <KycImage url={selectedVerification.student_card_url} alt={t.studentCard} onOpen={setLightbox} />
                           </div>
                         </div>
                       )}
@@ -348,12 +432,12 @@ const AdminDashboard = () => {
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">{t.verificationSelfie}</Label>
                           <div className="border border-border rounded-lg overflow-hidden bg-muted aspect-[4/3]">
-                            <img src={selectedVerification.selfie_url} alt={t.verificationSelfie} className="w-full h-full object-cover" />
+                            <KycImage url={selectedVerification.selfie_url} alt={t.verificationSelfie} onOpen={setLightbox} />
                           </div>
                         </div>
                       )}
                       {!selectedVerification.id_file_url && !selectedVerification.student_card_url && !selectedVerification.selfie_url && (
-                        <p className="text-sm text-muted-foreground col-span-3 text-center py-4">Aucun document uploadé</p>
+                        <p className="text-sm text-muted-foreground col-span-3 text-center py-4">{t.ad_no_docs}</p>
                       )}
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
@@ -393,7 +477,7 @@ const AdminDashboard = () => {
                       <TableCell><Badge variant="outline" className="capitalize">{p.role === "student" ? t.student : t.client}</Badge></TableCell>
                       <TableCell className="text-sm">{p.city || '-'}</TableCell>
                       <TableCell>{statusBadge(p.banned ? "banned" : "active")}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{new Date(p.created_at).toLocaleDateString('fr-FR')}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{new Date(p.created_at).toLocaleDateString(t.locale)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           {!p.banned ? (
@@ -410,7 +494,7 @@ const AdminDashboard = () => {
                     </TableRow>
                   ))}
                   {filteredProfiles.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Aucun utilisateur trouvé</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t.ad_no_users}</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -424,16 +508,16 @@ const AdminDashboard = () => {
             <CardHeader><CardTitle className="font-display text-lg">{t.reportedContent}</CardTitle></CardHeader>
             <CardContent>
               {reportedContent.length === 0 ? (
-                <div className="text-center py-8"><CheckCircle className="w-12 h-12 text-primary mx-auto mb-2" /><p className="text-muted-foreground">Aucun contenu signalé</p></div>
+                <div className="text-center py-8"><CheckCircle className="w-12 h-12 text-primary mx-auto mb-2" /><p className="text-muted-foreground">{t.ad_no_reports}</p></div>
               ) : (
                 <Table>
                   <TableHeader><TableRow>
-                    <TableHead>Avis</TableHead><TableHead>Note</TableHead><TableHead>Auteur</TableHead><TableHead className="text-right">{t.actions}</TableHead>
+                    <TableHead>{t.pf_tab_reviews}</TableHead><TableHead>{t.pf_stat_rating}</TableHead><TableHead>{t.author}</TableHead><TableHead className="text-right">{t.actions}</TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
                     {reportedContent.map((r: any) => (
                       <TableRow key={r.id}>
-                        <TableCell className="text-sm max-w-[300px] truncate">{r.text || 'Sans texte'}</TableCell>
+                        <TableCell className="text-sm max-w-[300px] truncate">{r.text || t.ad_no_text}</TableCell>
                         <TableCell><Badge variant="outline">{r.rating}/5</Badge></TableCell>
                         <TableCell className="text-sm">{r.reviewer_name}</TableCell>
                         <TableCell className="text-right">
@@ -450,12 +534,34 @@ const AdminDashboard = () => {
 
       case "orders":
         if (ordersLoading) return <Loader />;
+        const runAutoValidation = async () => {
+          const now = new Date();
+          const limit = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+          const toValidate = orders.filter(o => o.status === 'delivered' && o.delivered_at && new Date(o.delivered_at) < limit);
+
+          if (toValidate.length === 0) {
+            toast({ title: "Tout est à jour", description: "Aucune commande en attente de validation automatique." });
+            return;
+          }
+
+          for (const order of toValidate) {
+            await updateOrder.mutateAsync({ id: order.id, status: 'completed' });
+            // TODO(backend): reconnecter le payout Campay automatique via Spring Boot (POST /payments/payouts avec mode=auto).
+          }
+          toast({ title: "Validation terminée", description: `${toValidate.length} commande(s) validée(s) et payée(s).` });
+        };
+
         return (
           <Card className="shadow-card border-border/50">
-            <CardHeader><CardTitle className="font-display text-lg">{t.orders} ({orders.length})</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="font-display text-lg">{t.orders} ({orders.length})</CardTitle>
+              <Button size="sm" variant="outline" onClick={runAutoValidation} className="text-xs">
+                <RotateCcw className="w-3 h-3 mr-1" /> Auto-valider (+72h)
+              </Button>
+            </CardHeader>
             <CardContent>
               {orders.length === 0 ? (
-                <div className="text-center py-8"><ShoppingBag className="w-12 h-12 text-muted-foreground mx-auto mb-2" /><p className="text-muted-foreground">Aucune commande</p></div>
+                <div className="text-center py-8"><ShoppingBag className="w-12 h-12 text-muted-foreground mx-auto mb-2" /><p className="text-muted-foreground">{t.ad_no_orders}</p></div>
               ) : (
                 <Table>
                   <TableHeader><TableRow>
@@ -469,7 +575,7 @@ const AdminDashboard = () => {
                         <TableCell className="text-sm max-w-[200px] truncate">{order.gigTitle}</TableCell>
                         <TableCell className="text-sm font-medium">{order.budget.toLocaleString()} FCFA</TableCell>
                         <TableCell>{statusBadge(order.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleDateString('fr-FR')}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleDateString(t.locale)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -507,7 +613,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   ))}
-                  {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Aucune catégorie</p>}
+                  {categories.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{t.ad_no_cats}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -527,7 +633,7 @@ const AdminDashboard = () => {
                       </button>
                     </Badge>
                   ))}
-                  {cities.length === 0 && <p className="text-sm text-muted-foreground">Aucune ville</p>}
+                  {cities.length === 0 && <p className="text-sm text-muted-foreground">{t.ad_no_cities}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -608,6 +714,31 @@ const AdminDashboard = () => {
           </main>
         </div>
       </div>
+      <Dialog open={!!lightbox} onOpenChange={(o) => !o && setLightbox(null)}>
+        <DialogContent className="max-w-6xl p-0 bg-background overflow-hidden">
+          <DialogHeader className="sr-only"><DialogTitle>{t.ad_preview_img}</DialogTitle></DialogHeader>
+          <div className="flex items-center justify-between gap-2 p-2 border-b border-border bg-muted/40">
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setZoom((z) => Math.max(0.25, z - 0.25))} title={t.ad_zoom_out}><ZoomOut className="w-4 h-4" /></Button>
+              <span className="text-xs text-muted-foreground w-12 text-center">{Math.round(zoom * 100)}%</span>
+              <Button size="sm" variant="ghost" onClick={() => setZoom((z) => Math.min(5, z + 0.25))} title={t.ad_zoom_in}><ZoomIn className="w-4 h-4" /></Button>
+              <Button size="sm" variant="ghost" onClick={() => setZoom(1)} title={t.ad_reset_zoom}><RotateCcw className="w-4 h-4" /></Button>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleDownload}><Download className="w-4 h-4 mr-1" /> {t.ad_download}</Button>
+          </div>
+          <div className="overflow-auto max-h-[85vh] flex items-center justify-center bg-black/40">
+            {lightbox && (
+              <img
+                src={lightbox}
+                alt={t.ad_preview}
+                style={{ transform: `scale(${zoom})`, transformOrigin: "center center", transition: "transform 0.15s" }}
+                className="max-w-full max-h-[85vh] object-contain select-none"
+                onDoubleClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 };

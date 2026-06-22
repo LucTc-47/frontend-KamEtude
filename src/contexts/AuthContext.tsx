@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 
 export type UserRole = 'client' | 'student' | 'admin' | 'moderator';
+
+// Test UI only: change this value, then log out/log in again to test role-specific pages.
+// TODO(backend): remove this switch when Spring Boot authentication provides real roles.
+export const MOCK_USER_ROLE: UserRole = 'client';
 
 export interface AppUser {
   id: string;
@@ -18,9 +20,15 @@ export interface AppUser {
   createdAt: string;
 }
 
+export interface LocalSession {
+  accessToken: string;
+  userId: string;
+  createdAt: string;
+}
+
 interface AuthContextType {
   user: AppUser | null;
-  session: Session | null;
+  session: LocalSession | null;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithPhone: (phone: string, otp: string) => Promise<boolean>;
   sendPhoneOtp: (phone: string) => Promise<boolean>;
@@ -37,87 +45,91 @@ interface AuthContextType {
     level?: string;
     bio?: string;
     skills?: string[];
-  }) => Promise<boolean>;
+  }) => Promise<{ success: boolean; userId?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
 }
 
+const STORAGE_KEY = 'kametud_stub_auth';
 const AuthContext = createContext<AuthContextType | null>(null);
 
-async function fetchProfile(userId: string): Promise<AppUser | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  if (error || !data) return null;
+const createSession = (userId: string): LocalSession => ({
+  accessToken: `stub-token-${userId}`,
+  userId,
+  createdAt: new Date().toISOString(),
+});
+
+const createStubUser = (input: {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  role?: UserRole;
+  city?: string;
+}): AppUser => {
+  const email = input.email || 'demo@kametud.local';
   return {
-    id: data.user_id,
-    firstName: data.first_name,
-    lastName: data.last_name,
-    email: data.email,
-    phone: data.phone || '',
-    role: (data.role as UserRole) || 'client',
-    city: data.city || '',
-    avatar: data.avatar_url || undefined,
-    verified: data.verified || false,
-    banned: data.banned || false,
-    createdAt: data.created_at,
+    id: `stub-${btoa(email).replace(/=+$/g, '').toLowerCase()}`,
+    firstName: input.firstName || 'Demo',
+    lastName: input.lastName || 'KamEtud',
+    email,
+    phone: input.phone || '',
+    role: input.role || MOCK_USER_ROLE,
+    city: input.city || 'Dschang',
+    verified: (input.role || MOCK_USER_ROLE) === 'student',
+    banned: false,
+    createdAt: new Date().toISOString(),
   };
-}
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<LocalSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        if (session?.user) {
-          // Use setTimeout to avoid deadlock with Supabase auth
-          setTimeout(async () => {
-            const profile = await fetchProfile(session.user.id);
-            setUser(profile);
-            setLoading(false);
-          }, 0);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
+    // TODO(backend): reconnecter la restauration de session via Spring Boot (equivalent restauration session ancien fournisseur auth).
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { user: AppUser; session: LocalSession };
+        setUser(parsed.user);
+        setSession(parsed.session);
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id).then((profile) => {
-          setUser(profile);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
+  useEffect(() => {
+    if (user && session) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, session }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [user, session]);
+
+  const login = async (email: string, _password: string): Promise<boolean> => {
+    // TODO(backend): reconnecter la connexion email/mot de passe via Spring Boot (endpoint login Spring Boot).
+    const nextUser = createStubUser({ email });
+    setUser(nextUser);
+    setSession(createSession(nextUser.id));
+    return true;
   };
 
-  const sendPhoneOtp = async (phone: string): Promise<boolean> => {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    return !error;
+  const sendPhoneOtp = async (_phone: string): Promise<boolean> => {
+    // TODO(backend): reconnecter l'envoi OTP SMS via Spring Boot (endpoint OTP Spring Boot).
+    return true;
   };
 
-  const loginWithPhone = async (phone: string, otp: string): Promise<boolean> => {
-    const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: 'sms' });
-    return !error;
+  const loginWithPhone = async (phone: string, _otp: string): Promise<boolean> => {
+    // TODO(backend): reconnecter la verification OTP via Spring Boot (endpoint verification OTP Spring Boot).
+    const nextUser = createStubUser({ phone, email: `${phone.replace(/\D/g, '') || 'phone'}@phone.kametud.local` });
+    setUser(nextUser);
+    setSession(createSession(nextUser.id));
+    return true;
   };
 
   const register = async (userData: {
@@ -133,52 +145,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     level?: string;
     bio?: string;
     skills?: string[];
-  }): Promise<boolean> => {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-        },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    if (error || !data.user) return false;
-
-    // Update profile with additional info
-    await supabase
-      .from('profiles')
-      .update({
-        phone: userData.phone || '',
-        role: userData.role || 'client',
-        city: userData.city || '',
-        university: userData.university || null,
-        faculty: userData.faculty || null,
-        level: userData.level || null,
-        bio: userData.bio || null,
-        skills: userData.skills || [],
-      })
-      .eq('user_id', data.user.id);
-
-    return true;
+  }): Promise<{ success: boolean; userId?: string }> => {
+    // TODO(backend): reconnecter l'inscription et la creation de profil via Spring Boot (equivalent inscription + creation profil).
+    const nextUser = createStubUser(userData);
+    setUser(nextUser);
+    setSession(createSession(nextUser.id));
+    return { success: true, userId: nextUser.id };
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => {
+    // TODO(backend): reconnecter la deconnexion via Spring Boot (endpoint logout Spring Boot).
     setUser(null);
     setSession(null);
   };
 
-  return (
-    <AuthContext.Provider value={{
-      user, session, login, loginWithPhone, sendPhoneOtp, register, logout,
-      isAuthenticated: !!user, loading,
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    session,
+    login,
+    loginWithPhone,
+    sendPhoneOtp,
+    register,
+    logout,
+    isAuthenticated: !!user,
+    loading,
+  }), [user, session, loading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {

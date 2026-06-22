@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Gig } from "@/types";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Fix default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,6 +19,7 @@ interface ServiceMapProps {
 }
 
 const ServiceMap = ({ gigs, userLocation, onGigClick }: ServiceMapProps) => {
+  const { t } = useLanguage();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
 
@@ -62,7 +64,7 @@ const ServiceMap = ({ gigs, userLocation, onGigClick }: ServiceMapProps) => {
         fillOpacity: 0.9,
       })
         .addTo(map)
-        .bindPopup("<strong>📍 Votre position</strong>");
+        .bindPopup(`<strong>📍 ${t.sv_map_pos}</strong>`);
     }
 
     // Gig markers
@@ -73,7 +75,7 @@ const ServiceMap = ({ gigs, userLocation, onGigClick }: ServiceMapProps) => {
         <div style="min-width:180px">
           <strong>${gig.title}</strong><br/>
           <span style="color:#666">${gig.studentName} · ⭐ ${gig.rating}</span><br/>
-          <span style="font-weight:bold;color:hsl(160,60%,30%)">À partir de ${gig.tiers.basique.price.toLocaleString()} FCFA</span>
+          <span style="font-weight:bold;color:hsl(160,60%,30%)">${t.sv_from} ${gig.tiers.basique.price.toLocaleString()} FCFA</span>
         </div>
       `);
       marker.on("click", () => onGigClick(gig.id));
